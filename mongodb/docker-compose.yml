@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+
+  mongo:
+    image: mongo:6.0.5-jammy
+    restart: unless-stopped
+    container_name: 'mongo_db'
+
+    ports:
+      - 27017:27017
+
