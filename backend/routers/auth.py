@@ -8,7 +8,10 @@ from utils import (
     create_refresh_token
     )
 
-router = APIRouter(prefix="/auth")
+router = APIRouter(
+    prefix='/auth',
+    tags=['auth']
+)
 
 
 @router.post('/token', summary="Create access and refresh tokens for user", response_model=TokenScheme)

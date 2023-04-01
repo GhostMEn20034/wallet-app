@@ -11,7 +11,8 @@ from utils import get_hashed_password
 from services import user as usr
 
 router = fastapi.APIRouter(
-    prefix='/user'
+    prefix='/user',
+    tags=['users'],
 )
 
 
