@@ -1,9 +1,0 @@
-version: "3.8"
-services:
-  mongodb:
-    image: mongo:6.0.5-jammy
-    container_name: mongo1
-    restart: unless-stopped
-    ports:
-      - 27017:27017
-    command: "--bind_ip_all --replSet rs0"
