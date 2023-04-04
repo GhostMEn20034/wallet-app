@@ -33,7 +33,6 @@ class UserProfile(BaseModel):
     email: EmailStr
     date_of_birth: Optional[date]
     gender: Optional[GenderEnum]
-    password: str
 
     class Config:
         allow_population_by_field_name = True

@@ -1,6 +1,6 @@
 import fastapi
 from dependencies import get_current_user
-from schemes.user import UserProfile, UpdateUserProfile
+from schemes.users import UserProfile, UpdateUserProfile
 from schemes.auth import (
     SignUpResponse,
     UserAuth,
@@ -8,7 +8,8 @@ from schemes.auth import (
 )
 from client import db
 from utils import get_hashed_password
-from services import user as usr
+from services import users as usr
+from services.delete_documents import delete_accounts_and_records
 
 router = fastapi.APIRouter(
     prefix='/user',
@@ -53,7 +54,6 @@ async def update_profile(user_token: UserId = fastapi.Depends(get_current_user),
 
     if len(user_profile) >= 1:
         update_user_profile = await usr.update_user(user_id, user_profile)
-        # update_user_profile = await db["users"].update_one({"_id": user_id}, {"$set": user_profile})
         if update_user_profile == 1:
             if (
                     updated_user := await db["users"].find_one({"_id": user_id})
@@ -67,3 +67,7 @@ async def update_profile(user_token: UserId = fastapi.Depends(get_current_user),
 @router.delete("/profile/delete", status_code=fastapi.status.HTTP_204_NO_CONTENT)
 async def delete_profile(user_token: UserId = fastapi.Depends(get_current_user)):
     user = await db["users"].delete_one({"_id": user_token.id})
+    accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
+    account_ids = [account["_id"] for account in accounts]
+    if account_ids:
+        delete_related = await delete_accounts_and_records(account_ids)

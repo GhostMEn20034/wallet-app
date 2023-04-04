@@ -1,8 +1,8 @@
 from typing import Optional
-from pydantic import BaseModel, condecimal, root_validator
+from pydantic import BaseModel, condecimal, root_validator, validator, Field
 import datetime
 
-from .user import PyObjectId
+from .users import PyObjectId
 
 
 class ReferenceToUser(BaseModel):
@@ -16,9 +16,10 @@ class ReferenceToUser(BaseModel):
 
 
 class Account(BaseModel):
+    id: PyObjectId = Field(alias="_id")
     name: str
     balance: condecimal(decimal_places=2)
-    bank_account_number: Optional[str]
+    bank_account: Optional[str]
     user: ReferenceToUser
     created_at: datetime.datetime = datetime.datetime.now()
     modified_at: datetime.datetime = datetime.datetime.now()
@@ -31,11 +32,15 @@ class Account(BaseModel):
         values["modified_at"] = datetime.datetime.now()
         return values
 
+    @validator('balance', pre=True, always=True)
+    def set_balance(cls, v):
+        return round(v, 2)
+
 
 class CreateAccountModel(BaseModel):
     name: str
-    balance: condecimal(decimal_places=2)
-    bank_account_number: str
+    balance: condecimal(decimal_places=2) = 0
+    bank_account: Optional[str]
 
 
 class UpdateAccountModel(BaseModel):

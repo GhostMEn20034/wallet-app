@@ -1,7 +1,8 @@
 from client import db
+from schemes.users import PyObjectId
 
 
-async def update_user(user_id, update: dict) -> int:
+async def update_user(user_id: PyObjectId, update: dict) -> int:
     update_user_profile = await db["users"].update_one({"_id": user_id}, {"$set": update})
 
     if update["first_name"]:

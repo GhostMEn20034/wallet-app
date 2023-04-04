@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from .user import PyObjectId
+from .users import PyObjectId
 from bson import ObjectId
 
 

@@ -46,7 +46,8 @@ def create_refresh_token(subject: Union[str, Any], expires_delta: timedelta = No
 def convert_decimal(dict_item):
     # This function iterates a dictionary looking for types of Decimal and converts them to Decimal128
     # Embedded dictionaries and lists are called recursively.
-    if dict_item is None: return None
+    if dict_item is None:
+        return None
 
     for k, v in list(dict_item.items()):
         if isinstance(v, dict):
