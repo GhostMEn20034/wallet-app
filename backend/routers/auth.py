@@ -1,12 +1,17 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from schemes.auth import TokenScheme
+from jose import jwt
+from pydantic import ValidationError
+
+from schemes.auth import TokenScheme, RefreshToken, TokenPayload
 from client import db
+from settings import REFRESH_SECRET_KEY, ALGORITHM
 from utils import (
     verify_password,
     create_access_token,
-    create_refresh_token
-    )
+    create_refresh_token,
+)
 
 router = APIRouter(
     prefix='/auth',
@@ -30,7 +35,55 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="Incorrect email or password"
         )
 
+    subject = {
+        "id": user["_id"],
+        "first_name": user["first_name"],
+    }
+
     return {
-        "access_token": create_access_token(user['_id']),
-        "refresh_token": create_refresh_token(user['_id']),
+        "access_token": create_access_token(subject),
+        "refresh_token": create_refresh_token(subject),
+    }
+
+
+@router.post("/token/refresh", response_model=TokenScheme)
+async def refresh_tokens(refresh_token: RefreshToken):
+
+    refresh_token = refresh_token.dict().get("refresh_token")
+
+    try:
+        payload = jwt.decode(
+            refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM]
+        )
+        token_data = TokenPayload(**payload)
+
+        if datetime.fromtimestamp(token_data.exp) < datetime.now():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except(jwt.JWTError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = await db["users"].find_one({"_id": token_data.id})
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Could not find user",
+        )
+
+    subject = {
+        "id": user["_id"],
+        "first_name": user["first_name"]
+    }
+
+    return {
+        "access_token": create_access_token(subject),
+        "refresh_token": create_refresh_token(subject)
     }

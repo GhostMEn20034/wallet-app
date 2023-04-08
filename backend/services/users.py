@@ -10,3 +10,7 @@ async def update_user(user_id: PyObjectId, update: dict) -> int:
             {"user.id": user_id}, {"$set": {"user.first_name": update["first_name"]}})
 
     return update_user_profile.modified_count
+
+
+def compare_passwords(password1, password2):
+    return True if password1 == password2 else False

@@ -27,14 +27,21 @@ async def create_user(data: UserAuth):
             status_code=fastapi.status.HTTP_400_BAD_REQUEST,
             detail="User with this email already exist"
         )
+
+    if not usr.compare_passwords(data.password1, data.password2):
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match"
+        )
+
     user_data = {
         'email': data.email,
-        'password': get_hashed_password(data.password),
         'first_name': data.email,
     }
 
-    user = UserProfile(**user_data)
-    inserted_user = await db["users"].insert_one(user.dict())
+    user = UserProfile(**user_data).dict()
+    user["password"] = get_hashed_password(data.password1)
+    inserted_user = await db["users"].insert_one(user)
     response = {"id": inserted_user.inserted_id}
     return response
 

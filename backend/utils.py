@@ -1,9 +1,13 @@
 from decimal import Decimal
 
+from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from typing import Union, Any
+from typing import Dict
 from jose import jwt
+from pydantic import ValidationError
+
+from schemes.auth import TokenPayload
 from settings import ALGORITHM, ACCESS_SECRET_KEY, REFRESH_SECRET_KEY
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
@@ -21,24 +25,24 @@ def get_hashed_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
+def create_access_token(subject: Dict, expires_delta: timedelta = None) -> str:
     if expires_delta is not None:
         expires_delta = datetime.utcnow() + expires_delta
     else:
         expires_delta = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode = {"type": "access", "exp": expires_delta, "id": str(subject)}
+    to_encode = {"type": "access", "exp": expires_delta, "id": str(subject["id"]), "first_name": subject["first_name"]}
     encoded_jwt = jwt.encode(to_encode, ACCESS_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
 
-def create_refresh_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
+def create_refresh_token(subject: Dict, expires_delta: timedelta = None) -> str:
     if expires_delta is not None:
         expires_delta = datetime.utcnow() + expires_delta
     else:
         expires_delta = datetime.utcnow() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
 
-    to_encode = {"type": "refresh", "exp": expires_delta, "id": str(subject)}
+    to_encode = {"type": "refresh", "exp": expires_delta, "id": str(subject["id"]), "first_name": subject["first_name"]}
     encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 

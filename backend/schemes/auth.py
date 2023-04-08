@@ -7,6 +7,7 @@ class TokenPayload(BaseModel):
     type: str
     exp: int
     id: PyObjectId
+    first_name: str
 
 
 class TokenScheme(BaseModel):
@@ -16,7 +17,8 @@ class TokenScheme(BaseModel):
 
 class UserAuth(BaseModel):
     email: EmailStr
-    password: str
+    password1: str
+    password2: str
 
 
 class SignUpResponse(BaseModel):
@@ -28,3 +30,7 @@ class SignUpResponse(BaseModel):
 
 class UserId(BaseModel):
     id: PyObjectId
+
+
+class RefreshToken(BaseModel):
+    refresh_token: str
