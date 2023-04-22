@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt
+from jose import jwt, exceptions
 from pydantic import ValidationError
 
 from schemes.auth import TokenScheme, RefreshToken, TokenPayload
@@ -36,7 +36,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
 
     subject = {
-        "id": user["_id"],
+        "id": str(user["_id"]),
         "first_name": user["first_name"],
     }
 
@@ -56,19 +56,22 @@ async def refresh_tokens(refresh_token: RefreshToken):
             refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM]
         )
         token_data = TokenPayload(**payload)
+    except(jwt.JWTError, ValidationError, exceptions.ExpiredSignatureError) as ex:
+        match type(ex):
+            case exceptions.ExpiredSignatureError:
+                print(type(ex))
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                    detail="Unauthorized",
+                                    headers={"WWW-Authenticate": "Bearer"},
+                                    )
 
-        if datetime.fromtimestamp(token_data.exp) < datetime.now():
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token expired",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-    except(jwt.JWTError, ValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            case _:
+                print(type(ex))
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Could not validate credentials",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
 
     user = await db["users"].find_one({"_id": token_data.id})
 
@@ -79,8 +82,7 @@ async def refresh_tokens(refresh_token: RefreshToken):
         )
 
     subject = {
-        "id": user["_id"],
-        "first_name": user["first_name"]
+        "id": str(user["_id"]),
     }
 
     return {

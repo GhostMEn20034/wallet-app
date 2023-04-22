@@ -14,6 +14,21 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import AuthContext from '../context/AuthContext';
 
 
+export function Error(props) {
+  let error;
+  if (props.error === null) {
+    error = null;
+  } else {
+    error = props.error;
+  }
+
+  return error ? (
+    <Alert variant='outlined' severity='error' sx={{"mt": "4%"}} {...props}>
+      {props.error}
+    </Alert>
+  ) : null;
+}
+
 
 function AlertOrNothing() {
     // create a state variable to store the item from sessionStorage
@@ -59,12 +74,10 @@ function Copyright(props) {
 const theme = createTheme();
 
 export default function SignIn() {
-    let {loginUser} = useContext(AuthContext);
+    let {error, setError, loginUser} = useContext(AuthContext);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    
-    console.log("BUG")
     
     const isFormValid = () => {
         return (
@@ -73,16 +86,10 @@ export default function SignIn() {
         );  
       };
 
-
-    // const handleSubmit = (event) => {
-    //     event.preventDefault();
-    //     sessionStorage.removeItem("isAfterRegistration");
-    //     const data = new FormData(event.currentTarget);
-    //     console.log({
-    //     email: data.get('email'),
-    //     password: data.get('password'),
-    //     });
-    // };
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        loginUser(e, email, password); 
+      }
 
     return (
         <ThemeProvider theme={theme}>
@@ -103,7 +110,7 @@ export default function SignIn() {
             <Typography component="h1" variant="h5">
                 Sign in
             </Typography>
-            <Box component="form" onSubmit={loginUser} noValidate sx={{ mt: 1 }}>
+            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }} method='POST'>
                 <TextField
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -128,6 +135,9 @@ export default function SignIn() {
                 id="password"
                 autoComplete="current-password"
                 />
+
+                <Error error={error} onClose={() => setError(null)}/>
+
                 <Button
                 disabled={!isFormValid()}
                 type="submit"
@@ -139,7 +149,7 @@ export default function SignIn() {
                 </Button>
                 <Grid container>
                 <Grid item xs>
-                    <Link href="#" variant="body2">
+                    <Link href="/reset-password" variant="body2">
                     Forgot password?
                     </Link>
                 </Grid>

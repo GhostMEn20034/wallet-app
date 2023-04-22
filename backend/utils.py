@@ -12,6 +12,7 @@ from settings import ALGORITHM, ACCESS_SECRET_KEY, REFRESH_SECRET_KEY
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
 REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+# REFRESH_TOKEN_EXPIRE_MINUTES = 20
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,24 +26,28 @@ def get_hashed_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(subject: Dict, expires_delta: timedelta = None) -> str:
+def create_access_token(subject: Dict, expires_minutes=None, expires_delta: timedelta = None) -> str:
+
+    minutes = ACCESS_TOKEN_EXPIRE_MINUTES if expires_minutes is None else expires_minutes
+
     if expires_delta is not None:
         expires_delta = datetime.utcnow() + expires_delta
     else:
-        expires_delta = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta = datetime.utcnow() + timedelta(minutes=minutes)
 
-    to_encode = {"type": "access", "exp": expires_delta, "id": str(subject["id"]), "first_name": subject["first_name"]}
+    to_encode = {"type": "access", "exp": expires_delta, **subject}
     encoded_jwt = jwt.encode(to_encode, ACCESS_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
 
 def create_refresh_token(subject: Dict, expires_delta: timedelta = None) -> str:
+
     if expires_delta is not None:
         expires_delta = datetime.utcnow() + expires_delta
     else:
         expires_delta = datetime.utcnow() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
 
-    to_encode = {"type": "refresh", "exp": expires_delta, "id": str(subject["id"]), "first_name": subject["first_name"]}
+    to_encode = {"type": "refresh", "exp": expires_delta, "id": subject["id"]}
     encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 

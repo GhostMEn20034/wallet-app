@@ -11,6 +11,7 @@ from utils import get_hashed_password
 from services import users as usr
 from services.delete_documents import delete_accounts_and_records
 
+
 router = fastapi.APIRouter(
     prefix='/user',
     tags=['users'],
@@ -21,29 +22,19 @@ router = fastapi.APIRouter(
              status_code=fastapi.status.HTTP_201_CREATED)
 async def create_user(data: UserAuth):
     # querying database to check if user already exist
-    user = await db["users"].find_one({"email": data.email})
-    if user is not None:
-        raise fastapi.HTTPException(
-            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exist"
-        )
+    is_validated_credentials = await usr.validate_user(data.email, data.password1, data.password2)
 
-    if not usr.compare_passwords(data.password1, data.password2):
-        raise fastapi.HTTPException(
-            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
-            detail="Passwords do not match"
-        )
+    if is_validated_credentials:
+        user_data = {
+            'email': data.email,
+            'first_name': data.email,
+        }
 
-    user_data = {
-        'email': data.email,
-        'first_name': data.email,
-    }
-
-    user = UserProfile(**user_data).dict()
-    user["password"] = get_hashed_password(data.password1)
-    inserted_user = await db["users"].insert_one(user)
-    response = {"id": inserted_user.inserted_id}
-    return response
+        user = UserProfile(**user_data).dict()
+        user["password"] = get_hashed_password(data.password1)
+        inserted_user = await db["users"].insert_one(user)
+        response = {"id": inserted_user.inserted_id}
+        return response
 
 
 @router.get("/profile", response_model=UserProfile)

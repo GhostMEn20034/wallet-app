@@ -32,7 +32,7 @@ class UserProfile(BaseModel):
     last_name: Optional[str]
     email: EmailStr
     date_of_birth: Optional[date]
-    gender: Optional[GenderEnum]
+    gender: GenderEnum = GenderEnum.unspecified
 
     class Config:
         allow_population_by_field_name = True
@@ -53,7 +53,6 @@ class UserProfile(BaseModel):
 class UpdateUserProfile(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
-    email: Optional[EmailStr]
     date_of_birth: Optional[str]
     gender: Optional[GenderEnum]
 
@@ -65,7 +64,6 @@ class UpdateUserProfile(BaseModel):
            "example": {
                "first_name": "John",
                "last_name": "Doe",
-               "email": "user@exampe.com",
                "date_of_birth": "2004-05-14",
                "gender": "Female",
            }

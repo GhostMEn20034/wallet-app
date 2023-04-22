@@ -1,4 +1,3 @@
-import axios from 'axios';
 import * as React from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
@@ -13,10 +12,11 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
-import { baseUrl } from '../APIBaseURL';
 import AuthContext from '../context/AuthContext';
 import dayjs from 'dayjs';
 import useAxios from '../utils/useAxios';
+
+
 
 
 function DenseAppBar() {
@@ -41,7 +41,7 @@ export default function UserProfile() {
     let [dateOfBirth, setDateOfBirth] = React.useState(null);
     let [gender, setGender] = React.useState("")
 
-    let {authTokens, logoutUser} = React.useContext(AuthContext)
+    let {logoutUser} = React.useContext(AuthContext)
 
     let api = useAxios()
 
@@ -55,16 +55,17 @@ export default function UserProfile() {
             let response = await api.get('/user/profile')      
 
             let data = await response.data
-
+        
             if (response.status === 200) {
                 setFirstName(data.first_name);
                 setLastName(data.last_name || '')
                 setEmail(data.email);
                 setDateOfBirth(dayjs(data.date_of_birth) || null);
                 setGender(data.gender);
-            } else if (response.status === 401) {
-                logoutUser()
+            } else {
+              console.log("Error happened")
             }
+            
         }
     
 
@@ -76,16 +77,30 @@ export default function UserProfile() {
     }
 
 
-    const handleSubmit = (e) => {
+    const updateUserInfo = async (e) => {
         e.preventDefault();
-        let data_from_form = {
+        let profile_data = {
           first_name : firstName,
           last_name: lastName,
-          email: email,
           date_of_birth: dateOfBirth.format("YYYY-MM-DD"),
           gender: gender
         }
-        console.log(data_from_form)
+
+        console.log(profile_data)
+
+        let response = await api.put('/user/profile/update', {...profile_data})
+        
+        let data = await response.data
+
+        if (response.status === 200) {
+            setFirstName(data.first_name);
+            setLastName(data.last_name || '')
+            setEmail(data.email);
+            setDateOfBirth(dayjs(data.date_of_birth) || null);
+            setGender(data.gender);
+        } else {
+          console.log("Error happened")
+        }
     }
 
     return (
@@ -93,18 +108,18 @@ export default function UserProfile() {
         <DenseAppBar />  
         <CssBaseline />
         <Container sx={{width: '75%'}}>
-        <Box sx={{ height: '50vh', 'mt': '2%', padding: 1}} component='form' onSubmit={handleSubmit}>
+        <Box sx={{ height: '50vh', 'mt': '2%', padding: 1}} component='form' onSubmit={updateUserInfo}>
         <Box>    
-        <TextField id="standard-basic" label="First name" variant="standard" name='first_name' value={firstName} 
-        onChange={(e) => setFirstName(e.target.value)} sx={{m: 2, }}/>
+        <TextField id="standard-basic" label="First name" variant="standard" name='first_name' value={firstName}
+        onChange={(e) => setFirstName(e.target.value)} sx={{m: 2, width: "50%"}}/>
         </Box>
         <Box>
         <TextField id="standard-basic" label="Last Name" variant="standard" name='last_name' 
-        value={lastName} onChange={(e) => setLastName(e.target.value)} sx={{m: 2, }}/>
+        value={lastName} onChange={(e) => setLastName(e.target.value)} sx={{m: 2, width: "50%"}}/>
         </Box>
         <Box>
         <TextField id="standard-basic" label="Email address" variant="standard" name='email'
-        value={email} onChange={(e) => setEmail(e.target.value)} sx={{m: 2, }}/>
+        value={email} onChange={(e) => setEmail(e.target.value)} sx={{m: 2, width: "50%"}} disabled/>
         </Box>
         <Box>    
         <BasicDatePicker sx={{'m': 2}} value={dateOfBirth} onChange={(NewValue) => setDateOfBirth(NewValue)}/>
@@ -130,9 +145,11 @@ export default function UserProfile() {
         </Box>
         <Button variant="contained" size="medium" sx={{m: 2}} type='submit' disabled={!isFormValid()}>
             Update Personal info
-        </Button>    
-        </Box>
-        </Container>
-    </React.Fragment>
-    );
-    }
+        </Button>
+        <Button variant='contained' size='medium' 
+        sx={{backgroundColor: "#FF0000", ":hover": {bgcolor: "#db0804", color: "white"}}}
+        onClick={logoutUser}>Log out</Button>
+    </Box>
+    </Container>
+    </React.Fragment> );
+}
