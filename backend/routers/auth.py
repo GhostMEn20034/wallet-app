@@ -50,30 +50,27 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 async def refresh_tokens(refresh_token: RefreshToken):
 
     refresh_token = refresh_token.dict().get("refresh_token")
-
     try:
         payload = jwt.decode(
             refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM]
         )
         token_data = TokenPayload(**payload)
+        user = await db["users"].find_one({"_id": token_data.id})
     except(jwt.JWTError, ValidationError, exceptions.ExpiredSignatureError) as ex:
         match type(ex):
             case exceptions.ExpiredSignatureError:
-                print(type(ex))
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                     detail="Unauthorized",
                                     headers={"WWW-Authenticate": "Bearer"},
                                     )
 
             case _:
-                print(type(ex))
+                print(ex)
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Could not validate credentials",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
-
-    user = await db["users"].find_one({"_id": token_data.id})
 
     if user is None:
         raise HTTPException(

@@ -7,11 +7,11 @@ import { BrowserRouter, Routes, Route} from 'react-router-dom';
 import PrivateRoute from './utils/PrivateRoute';
 import SendOTP from './components/ResetPassword';
 import ConfirmOTP from './components/ConfirmResetCode';
+import RecordHistory from './components/RecordsHistory';
 
 
 function App() {
   return( 
-   
     <BrowserRouter>
     <AuthProvider>
       <Routes>
@@ -24,11 +24,16 @@ function App() {
               <UserProfile />
               </PrivateRoute>
           }/>
+          <Route path='/records' element={
+            <PrivateRoute>
+            <RecordHistory />  
+            </PrivateRoute>
+          }/>
           <Route path='/reset-password' element={<SendOTP />}/>
           <Route path='/reset-password/otp' element={<ConfirmOTP />}/>
       </Routes>
     </AuthProvider>  
-    </BrowserRouter>
+    </BrowserRouter> 
   );
 }
 

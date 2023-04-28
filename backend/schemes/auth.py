@@ -1,13 +1,14 @@
 from pydantic import BaseModel, EmailStr
 from .users import PyObjectId
 from bson import ObjectId
+from typing import Optional
 
 
 class TokenPayload(BaseModel):
     type: str
     exp: int
     id: PyObjectId
-    first_name: str
+    first_name: Optional[str]
 
 
 class TokenScheme(BaseModel):

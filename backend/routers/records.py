@@ -4,7 +4,7 @@ import fastapi
 import pydantic
 from client import db
 from bson import ObjectId
-from services.records import increment_the_balance, decrement_the_balance, funds_transfer
+from services.records import increment_the_balance, decrement_the_balance, funds_transfer, aggregate_records
 from schemes import records
 from schemes import auth
 from schemes.users import PyObjectId
@@ -63,19 +63,36 @@ async def create_record(record_data: records.CreateRecordModel = fastapi.Body(..
     return {"status": "BAD"}
 
 
-@router.get("/", response_model=List[records.Record], response_model_exclude_none=True)
+@router.get("/", response_model=List[records.AggregatedRecords], response_model_exclude_none=True)
 async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user)):
     accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
     account_ids = [account["_id"] for account in accounts]
-    records = await db["records"].find({"account_id": {"$in": account_ids}}).to_list(500)
 
-    return records
+    aggregated_records = await aggregate_records(account_ids)
+
+    return aggregated_records
 
 
-@router.delete("/{record_id}/delete", status_code=fastapi.status.HTTP_204_NO_CONTENT)
-async def delete_record(record_id: PyObjectId, user_token: auth.UserId = fastapi.Depends(get_current_user)):
+@router.delete("/delete")
+async def delete_record(record_ids: records.DeleteRecordsData,
+                        user_token: auth.UserId = fastapi.Depends(get_current_user)):
+    record_ids = record_ids.record_ids
     accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
     account_ids = [account["_id"] for account in accounts]
-    if accounts:
+
+    if accounts and len(record_ids) == 1:
+        record_id = record_ids[0]
         deleted_record = await db["records"].delete_one({"_id": record_id, "account_id": {"$in": account_ids}})
 
+        if deleted_record.deleted_count == 1:
+            return fastapi.responses.Response(status_code=204)
+
+    if accounts:
+        deleted_records = await db["records"].delete_many(
+            {"_id": {"$in": record_ids}, "account_id": {"$in": account_ids}})
+
+        if deleted_records.deleted_count >= 1:
+            return fastapi.responses.Response(status_code=204)
+
+    return fastapi.responses.JSONResponse(status_code=400,
+                                          content={"status": "Impossible to delete records that doesn't exists"})

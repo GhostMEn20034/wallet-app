@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, condecimal, validator, Field
 from .users import PyObjectId
 from enum import Enum
@@ -26,17 +26,22 @@ class CreateRecordModel(BaseModel):
         return float(round(v, 2))
 
 
-class Record(CreateRecordModel):
+class Record(BaseModel):
     id: PyObjectId = Field(alias='_id')
+    account_id: PyObjectId
+    account_name: str
+    receiver: Optional[PyObjectId]
+    amount: condecimal(decimal_places=2)
+    category: str
+    record_type: RecordType
     created_at: datetime.datetime = datetime.datetime.now()
 
 
-class UpdateRecordType(str, Enum):
-    income = 'Income'
-    expense = 'Expense'
+class AggregatedRecords(BaseModel):
+    date: datetime.date
+    records: List[Record]
 
 
-class UpdateRecord(BaseModel):
-    amount: Optional[condecimal(decimal_places=2)]
-    category: Optional[str]
-    record_type: Optional[UpdateRecordType]
+class DeleteRecordsData(BaseModel):
+    record_ids: List[PyObjectId]
+

@@ -54,7 +54,7 @@ async def update_profile(user_token: UserId = fastapi.Depends(get_current_user),
         update_user_profile = await usr.update_user(user_id, user_profile)
         if update_user_profile == 1:
             if (
-                    updated_user := await db["users"].find_one({"_id": user_id})
+                updated_user := await db["users"].find_one({"_id": user_id})
             ) is not None:
                 return updated_user
 
