@@ -1,6 +1,8 @@
+import fastapi
+import datetime
+from typing import List
 from client import db, client
 from schemes.users import PyObjectId
-from typing import List
 
 
 async def increment_the_balance(account_id: PyObjectId, amount: float):
@@ -25,7 +27,7 @@ async def funds_transfer(sender: PyObjectId, receiver: PyObjectId, amount: float
                                                                          {"$inc": {"balance": round(amount, 2)}},
                                                                          session=s)
 
-            if 1 in {decrease_senders_balance.modified_count, increase_receivers_balance.modified_count}:
+            if decrease_senders_balance.modified_count == 1 and increase_receivers_balance.modified_count == 1:
                 return 1
 
 
@@ -55,6 +57,12 @@ async def aggregate_records(account_ids: List):
                 }
             }
         },
+
+        {
+            "$sort": {
+                "created_at": -1
+            }
+        },
         # Group by date and push the records into an array called records
         {
             "$group": {
@@ -62,6 +70,7 @@ async def aggregate_records(account_ids: List):
                 "records": {"$push": "$$ROOT"}
             }
         },
+
         # Project only the fields that you need
         {
             "$project": {
@@ -89,10 +98,58 @@ async def aggregate_records(account_ids: List):
         },
         {
             "$sort": {
-                "date": -1
+                "date": -1,
             }
         },
     ]
 
     aggregated_records = await db["records"].aggregate(pipeline).to_list(500)
     return aggregated_records
+
+
+async def create_record(record_data: dict, account: dict, user_id):
+    record_type = record_data.get("record_type")
+    match record_type:
+        case "Income":
+            increase_the_balance = await increment_the_balance(account.get("_id"), record_data.get("amount"))
+            if increase_the_balance == 1:
+                del record_data["receiver"]
+                record_data["created_at"] = datetime.datetime.now()
+                created_record = await db["records"].insert_one(record_data)
+                return fastapi.responses.JSONResponse(status_code=fastapi.status.HTTP_200_OK,
+                                                      content={"status": "The income was credited to your account"})
+        case "Expense":
+            decrease_the_balance = await decrement_the_balance(account.get("_id"), record_data.get("amount"))
+            if decrease_the_balance == 1:
+                del record_data["receiver"]
+                record_data["created_at"] = datetime.datetime.now()
+                created_record = await db["records"].insert_one(record_data)
+                return fastapi.responses.JSONResponse(status_code=fastapi.status.HTTP_200_OK, content={
+                    "status": "Funds have been successfully withdrawn from your account"})
+        case "Transfer":
+            receiver = await db["accounts"].find_one(
+                {"_id": record_data.get("receiver"), "user.id": user_id})
+            if receiver:
+                transfer = await funds_transfer(account.get("_id"), record_data.get("receiver"),
+                                                record_data.get("amount"))
+                if transfer == 1:
+                    common_fields = {"sender": account.get("_id"),
+                                     "receiver": record_data.get("receiver"), "amount": record_data.get("amount"),
+                                     "category": "Transfer, withdraw", "created_at": datetime.datetime.now()}
+
+                    sender_data = {"account_id": account.get("_id"), **common_fields,
+                                   "record_type": "Transfer withdrawal"}
+
+                    receiver_data = {"account_id": record_data.get("receiver"), **common_fields,
+                                     "record_type": "Transfer income"}
+
+                    receiver_record = await db["records"].insert_one(receiver_data)
+                    sender_record = await db["records"].insert_one(sender_data)
+                    return fastapi.responses.JSONResponse(
+                        status_code=fastapi.status.HTTP_200_OK,
+                        content={
+                            "status": "The funds have been transferred successfully"
+                        })
+
+        case _:
+            return fastapi.responses.JSONResponse(status_code=400, content={"Status": "Something went wrong"})

@@ -1,11 +1,19 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pydantic import BaseModel, condecimal, validator, Field
 from .users import PyObjectId
 from enum import Enum
 import datetime
+import decimal
 
 
 class RecordType(str, Enum):
+    income = 'Income'
+    expense = 'Expense'
+    transfer_withdrawal = 'Transfer withdrawal'
+    transfer_income = 'Transfer income'
+
+
+class RecordTypeCreate(str, Enum):
     income = 'Income'
     expense = 'Expense'
     transfer = 'Transfer'
@@ -14,27 +22,24 @@ class RecordType(str, Enum):
 class CreateRecordModel(BaseModel):
     account_id: PyObjectId
     receiver: Optional[PyObjectId]
-    amount: condecimal(decimal_places=2)
-    category: str
-    record_type: RecordType
+    amount: condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))
+    category: Optional[str]
+    record_type: RecordTypeCreate
 
     class Config:
         use_enum_values = True
-
-    @validator('amount', pre=True, always=True)
-    def set_ts_now(cls, v):
-        return float(round(v, 2))
 
 
 class Record(BaseModel):
     id: PyObjectId = Field(alias='_id')
     account_id: PyObjectId
     account_name: str
+    sender: Optional[PyObjectId]
     receiver: Optional[PyObjectId]
-    amount: condecimal(decimal_places=2)
+    amount: condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))
     category: str
     record_type: RecordType
-    created_at: datetime.datetime = datetime.datetime.now()
+    created_at: datetime.datetime
 
 
 class AggregatedRecords(BaseModel):
@@ -44,4 +49,3 @@ class AggregatedRecords(BaseModel):
 
 class DeleteRecordsData(BaseModel):
     record_ids: List[PyObjectId]
-

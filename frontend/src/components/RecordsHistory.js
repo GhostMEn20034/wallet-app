@@ -8,19 +8,23 @@ import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import Checkbox from '@mui/material/Checkbox';
 import { Button } from '@mui/material';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FormDialog from './AddRecord';
 
 
 function RecordAmount({recordType, amount}) {
   const recordStyles = {
     "Expense": {color: "red", sign: "-"},
     "Income": {color: "green", sign: ""},
-    "Transfer": {color: "black", sign: "-"}
+    "Transfer withdrawal": {color: "black", sign: "-"},
+    "Transfer income": {color: "black", sign: ""}
   };
 
   const {color, sign} = recordStyles[recordType];
 
   return (
-  <Typography sx={{display: "flex", color: color, "ml": "auto"}}><b>{sign + amount}</b></Typography>
+  <Typography sx={{display: "flex", color: color, "ml": "auto"}}><b>{sign + amount + " USD"}</b></Typography>
   )
 }
 
@@ -28,6 +32,7 @@ export default function RecordHistory() {
 
   let [data, setData] = useState([]);
   let [checked, setChecked] = useState({});
+  let [opened, setOpened] = useState(false);
 
   const Item = styled(Paper)(({ theme }) => ({
       backgroundColor: "#f3fffe",
@@ -54,7 +59,6 @@ export default function RecordHistory() {
   useEffect(
       () => {
           getRecords();
-          console.log(data)
       }, []
   )
 
@@ -75,6 +79,14 @@ export default function RecordHistory() {
   let isSelected = () => {
     let keys = Object.keys(checked);
     return keys.length >= 1;
+  }
+
+  let handleClickOpen = () => {
+    setOpened(true);
+  }
+
+  let handleClose = () => {
+    setOpened(false)
   }
 
   const deleteRecords = (ids) => {
@@ -109,20 +121,31 @@ export default function RecordHistory() {
   }
 
   return (
-  <Box sx={{ width: '75%', mt: "1%", "ml": "23%"}}>
-    <Stack >
+  <Box display="flex">
+  {opened && <FormDialog opened={opened} onClose={handleClose} onSubmit={getRecords}/>}
+  <Box sx={{bgcolor: "#f5fffe", width: "20%", height: "10%", paddingBottom: "2%", mt: "8.5%", ml: "1%", "borderRadius": "15px", boxShadow: 3}}
+      alignContent="center"
+  >
+    <Button variant='contained' size='small' onClick={handleClickOpen}
+    sx={{ml: "15%", mt: "10%", backgroundColor: "#30b864", ":hover": {bgcolor: "#289953", color: "white"}}}>
+      <AddCircleOutlineIcon /> &nbsp;Add record
+    </Button>
+  </Box>
+  <Box sx={{ mt: "1%", width: '100%'}}>
+    
+    <Stack sx={{mr: "1.5%"}}>
       <Button variant='contained' size='small' onClick={() => deleteSelected()}
-      sx={{backgroundColor: "red", width: "20%", ":hover": {bgcolor: "#db0804", color: "white"}, ml: "73%"}}
+      sx={{backgroundColor: "red", width: "20%", ":hover": {bgcolor: "#db0804", color: "white"}, ml: "80%"}}
       disabled={!isSelected()}>
-        Delete record(s)
+        <DeleteIcon /> &nbsp;Delete record(s)
       </Button>
       {data.map(item => (
-        <Stack spacing={2} key={item.date} sx={{ml: "10%"}}>
+        <Stack spacing={2} key={item.date} sx={{ml: "5%"}}>
         <Typography variant="subtitle1" sx={{mt: "2%", color: "#000080"}}>
-        {dayjs(item.date).format("D MMMM YYYY")}
+        <b>{dayjs(item.date).format("D MMMM YYYY")}</b>
         </Typography>
         {item.records.map((record) => (
-        <Item key={record._id} sx={{mb: "2%", "width": "90%", display: "flex", alignItems: "center"}}>
+        <Item key={record._id} sx={{mb: "2%", display: "flex", alignItems: "center"}}>
         <Checkbox sx={{"width": "2%", position: "relative"}} checked={checked[record._id]} onChange={() => {updateChecked(record._id)}} />
         <Typography sx={{ml: "2%", color: "black", width: "15%"}}><b>{record.category}</b></Typography>
         <Typography sx={{ml: "4%"}}>{record.account_name}</Typography>
@@ -133,6 +156,6 @@ export default function RecordHistory() {
       ))}
     </Stack>
   </Box>
-
+  </Box>
   )
 }
