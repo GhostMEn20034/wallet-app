@@ -43,9 +43,15 @@ class Record(BaseModel):
 
 
 class AggregatedRecords(BaseModel):
-    date: datetime.date
-    records: List[Record]
+    agg_date: datetime.date = Field(alias='date')
+    agg_records: List[Record] = Field(alias='records')
 
 
 class DeleteRecordsData(BaseModel):
     record_ids: List[PyObjectId]
+
+
+class RecordFilter(BaseModel):
+    category: Optional[str] = None
+    min_amount: Optional[condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))] = None
+    max_amount: Optional[condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))] = None

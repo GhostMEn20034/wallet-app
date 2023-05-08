@@ -1,14 +1,13 @@
 import datetime
-from typing import List
+from typing import List, Tuple, Optional, Union
 import fastapi
 import pydantic
 from client import db
 from bson import ObjectId
-from services.records import (increment_the_balance,
-                              decrement_the_balance,
-                              funds_transfer,
-                              aggregate_records,
-                              create_record)
+from services.records import (records_by_date,
+                              records_by_amount,
+                              create_record,
+                              create_filter_dict)
 from schemes import records
 from schemes import auth
 from schemes.users import PyObjectId
@@ -32,14 +31,31 @@ async def route_create_record(record_data: records.CreateRecordModel = fastapi.B
         return await create_record(record_data, account, user_token.id)
 
 
-@router.get("/", response_model=List[records.AggregatedRecords], response_model_exclude_none=True)
-async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user)):
+@router.get("/", response_model=Union[List[records.AggregatedRecords], List[records.Record]],
+            response_model_exclude_none=True, response_model_by_alias=True)
+async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user),
+                      sort_by: str = fastapi.Query("date", enum=["date", "amount"]),
+                      order: str = fastapi.Query("desc", enum=["asc", "desc"]),
+                      record_filter: records.RecordFilter = fastapi.Depends(records.RecordFilter),
+                      account_ids: Optional[List[PyObjectId]] = fastapi.Query([], style="commaDelimited")):
     accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
-    account_ids = [account["_id"] for account in accounts]
 
-    aggregated_records = await aggregate_records(account_ids)
+    record_filter = record_filter.dict(exclude_none=True)
 
-    return aggregated_records
+    if account_ids:
+        account_ids = [account["_id"] for account in accounts if account["_id"] in account_ids]
+    else:
+        account_ids = [account["_id"] for account in accounts]
+
+    filter_dict = create_filter_dict(record_filter)
+
+    reverse = bool(order == "desc")
+
+    match sort_by:
+        case "date":
+            return await records_by_date(account_ids, filter_dict, reverse)
+        case "amount":
+            return await records_by_amount(account_ids, filter_dict, reverse)
 
 
 @router.delete("/delete")

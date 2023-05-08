@@ -31,7 +31,7 @@ async def funds_transfer(sender: PyObjectId, receiver: PyObjectId, amount: float
                 return 1
 
 
-async def aggregate_records(account_ids: List):
+async def records_by_date(account_ids: List, filters:dict, reverse: bool):
     pipeline = [
         {
             "$lookup": {
@@ -46,7 +46,7 @@ async def aggregate_records(account_ids: List):
         },
         {
             "$match": {
-                "account_id": {"$in": account_ids}
+                "account_id": {"$in": account_ids}, **filters
             }
         },
         # Add a new field called date that only contains the year-month-day part of created_at
@@ -60,7 +60,7 @@ async def aggregate_records(account_ids: List):
 
         {
             "$sort": {
-                "created_at": -1
+                "created_at": -1 if reverse else 1
             }
         },
         # Group by date and push the records into an array called records
@@ -98,12 +98,12 @@ async def aggregate_records(account_ids: List):
         },
         {
             "$sort": {
-                "date": -1,
+                "date": -1 if reverse else 1,
             }
         },
     ]
 
-    aggregated_records = await db["records"].aggregate(pipeline).to_list(500)
+    aggregated_records = await db["records"].aggregate(pipeline).to_list(100)
     return aggregated_records
 
 
@@ -153,3 +153,42 @@ async def create_record(record_data: dict, account: dict, user_id):
 
         case _:
             return fastapi.responses.JSONResponse(status_code=400, content={"Status": "Something went wrong"})
+
+
+async def records_by_amount(account_ids: List, filters: dict, reverse: bool):
+    pipeline = [
+        {
+            "$lookup": {
+                "from": "accounts",
+                "localField": "account_id",
+                "foreignField": "_id",
+                "as": "account"
+            }
+        },
+        {
+            "$unwind": "$account"
+        },
+        {
+            "$match": {
+                "account_id": {"$in": account_ids}, **filters
+            }
+        },
+        {"$addFields": {"account_name": "$account.name"}},
+        {"$sort": {"amount": -1 if reverse else 1}},
+        {"$limit": 100}
+    ]
+
+    records = await db["records"].aggregate(pipeline).to_list(100)
+    return records
+
+
+def create_filter_dict(properties: dict):
+    filter_dict = {
+        key: value for key, value in [
+            ("category", properties.get("category") if properties.get("category") else None),
+            ("amount", {"$gte": float(properties.get("min_amount")),
+                        "$lte": float(properties.get("max_amount"))} if properties.get(
+                "min_amount") and properties.get("max_amount") else None),
+        ] if value is not None}
+
+    return filter_dict

@@ -30,10 +30,7 @@ def create_access_token(subject: Dict, expires_minutes=None, expires_delta: time
 
     minutes = ACCESS_TOKEN_EXPIRE_MINUTES if expires_minutes is None else expires_minutes
 
-    if expires_delta is not None:
-        expires_delta = datetime.utcnow() + expires_delta
-    else:
-        expires_delta = datetime.utcnow() + timedelta(minutes=minutes)
+    expires_delta = datetime.utcnow() + timedelta(minutes=minutes)
 
     to_encode = {"type": "access", "exp": expires_delta, **subject}
     encoded_jwt = jwt.encode(to_encode, ACCESS_SECRET_KEY, ALGORITHM)

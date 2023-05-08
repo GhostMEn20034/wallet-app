@@ -180,7 +180,6 @@ export default function FormDialog({opened, onClose, onSubmit}) {
                                                                "amount": amount, "category": category,
                                                                "record_type": recordType});
       onSubmit();
-      onClose();
     } catch (e) {
       console.log("Something went wrong")
     }
@@ -192,13 +191,13 @@ export default function FormDialog({opened, onClose, onSubmit}) {
                                                                "amount": amount,
                                                                "record_type": recordType});
       onSubmit();
-      onClose();
     } catch (e) {
       console.log("Something went wrong")
     }
   }
 
   let handleSubmit = () => {
+    onClose();
     if (recordType === 'Transfer') {
       createTransferRecord();
     } else {
@@ -228,7 +227,7 @@ export default function FormDialog({opened, onClose, onSubmit}) {
             </RadioGroup>
            </FormControl>
            <FormControl fullWidth sx={{mt: "4%"}}>
-                <InputLabel id="account-select-label">From</InputLabel>
+                <InputLabel id="account-select-label">{recordType === 'Income' ? "To" : "From"}</InputLabel>
                 <Select
                     name="from"
                     value={from}
