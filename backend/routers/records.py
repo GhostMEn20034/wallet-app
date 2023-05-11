@@ -31,31 +31,35 @@ async def route_create_record(record_data: records.CreateRecordModel = fastapi.B
         return await create_record(record_data, account, user_token.id)
 
 
-@router.get("/", response_model=Union[List[records.AggregatedRecords], List[records.Record]],
+@router.get("/", response_model=records.ResponseOfRecords,
             response_model_exclude_none=True, response_model_by_alias=True)
 async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user),
                       sort_by: str = fastapi.Query("date", enum=["date", "amount"]),
                       order: str = fastapi.Query("desc", enum=["asc", "desc"]),
-                      record_filter: records.RecordFilter = fastapi.Depends(records.RecordFilter),
-                      account_ids: Optional[List[PyObjectId]] = fastapi.Query([], style="commaDelimited")):
+                      account_ids: Optional[List[PyObjectId]] = fastapi.Query([], style="commaDelimited"),
+                      other_filters: records.RecordFilter = fastapi.Depends(records.RecordFilter),):
     accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
 
-    record_filter = record_filter.dict(exclude_none=True)
+    other_filters = other_filters.dict(exclude_none=True)
 
     if account_ids:
         account_ids = [account["_id"] for account in accounts if account["_id"] in account_ids]
     else:
         account_ids = [account["_id"] for account in accounts]
 
-    filter_dict = create_filter_dict(record_filter)
+    filter_dict = create_filter_dict(other_filters)
+
+    account_ids_and_names = [{"id": account["_id"], "name": account["name"]} for account in accounts]
 
     reverse = bool(order == "desc")
 
     match sort_by:
         case "date":
-            return await records_by_date(account_ids, filter_dict, reverse)
+            return {"response": await records_by_date(account_ids, filter_dict, reverse),
+                    "accounts": account_ids_and_names}
         case "amount":
-            return await records_by_amount(account_ids, filter_dict, reverse)
+            return {"response": await records_by_amount(account_ids, filter_dict, reverse),
+                    "accounts": account_ids_and_names}
 
 
 @router.delete("/delete")

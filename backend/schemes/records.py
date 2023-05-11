@@ -1,7 +1,8 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 from pydantic import BaseModel, condecimal, validator, Field
 from .users import PyObjectId
 from enum import Enum
+import fastapi
 import datetime
 import decimal
 
@@ -52,6 +53,27 @@ class DeleteRecordsData(BaseModel):
 
 
 class RecordFilter(BaseModel):
-    category: Optional[str] = None
+    categories: Optional[List[str]] = Field(fastapi.Query([]))
     min_amount: Optional[condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))] = None
     max_amount: Optional[condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))] = None
+
+    class Config:
+        query_model = True
+        schema_extra = {
+            "example": {
+                "category": ["Dwelling", "Entertainment"],
+                "min_amount": 10.00,
+                "max_amount": 100.00
+            },
+            "description": "A filter for records based on category and amount"
+        }
+
+
+class Accounts(BaseModel):
+    id: PyObjectId
+    name: str
+
+
+class ResponseOfRecords(BaseModel):
+    response: Union[List[AggregatedRecords], List[Record]]
+    accounts: List[Accounts]

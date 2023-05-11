@@ -185,7 +185,7 @@ async def records_by_amount(account_ids: List, filters: dict, reverse: bool):
 def create_filter_dict(properties: dict):
     filter_dict = {
         key: value for key, value in [
-            ("category", properties.get("category") if properties.get("category") else None),
+            ("category", {"$in": properties.get("categories")} if properties.get("categories") else None),
             ("amount", {"$gte": float(properties.get("min_amount")),
                         "$lte": float(properties.get("max_amount"))} if properties.get(
                 "min_amount") and properties.get("max_amount") else None),

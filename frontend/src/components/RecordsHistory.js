@@ -7,12 +7,15 @@ import useAxios from '../utils/useAxios';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import Checkbox from '@mui/material/Checkbox';
-import { Button, Select } from '@mui/material';
+import { Button, Select, Collapse, List } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {FormControl, MenuItem } from '@mui/material';
+import {FormControl, MenuItem, ListItem, ListItemText } from '@mui/material';
 import FormDialog from './AddRecord';
 import CircularProgress from '@mui/material/CircularProgress';
+import CategoryList from './CategoryFilter';
+import AccountFilter from './AccountFilter';
 
 
 function RecordAmount({recordType, amount}) {
@@ -31,12 +34,13 @@ function RecordAmount({recordType, amount}) {
 }
 
 export default function RecordHistory() {
-
-  let [data, setData] = useState([]);
-  let [checked, setChecked] = useState({});
+  let [data, setData] = useState({});
+  let [checked, setChecked] = useState([]);
   let [opened, setOpened] = useState(false);
   let [sortOption, setSortOption] = useState({sortBy: "date", order: "desc"});
-  let [loading, setLoading] = useState(false);
+  let [openedFilter, setOpenedFilter] = useState(false);
+  let [categories, setCategories] = useState([]);
+  let [filters, setFilters] = useState({});
 
   const Item = styled(Paper)(({ theme }) => ({
       backgroundColor: "#f3fffe",
@@ -49,25 +53,50 @@ export default function RecordHistory() {
   let api = useAxios();
 
   let getRecords = async () => {
-      setLoading(true); 
-      let params = { sort_by: sortOption.sortBy, order: sortOption.order};
-      let response = await api.get('/records/', {params: params});
-      let data = await response.data;
 
+      const qs = require('qs')
+
+      let params = { sort_by: sortOption.sortBy, order: sortOption.order, categories: filters.categories ? filters.categories : undefined,
+                     account_ids: filters.accounts ? filters.accounts : undefined };
+      let response = await api.get('/records/', {params: params, paramsSerializer: {
+        // Use the 'indices' option to remove the brackets
+        serialize: params => qs.stringify(params, {indices: false})
+      }})
+
+      let data = await response.data;
       setData(data);
-      setLoading(false);
   }
+
+  let getCategories = async () => {
+    let response = await api.get('/categories/');
+    let data = await response.data;
+
+    setCategories(data);
+
+  }
+
 
   useEffect(() => {
     console.log(Object.keys(checked));
     console.log(checked)
   }, [checked]);
 
+  useEffect(() => {
+    console.log("Hello");
+  }, [filters]);
+
   useEffect(
       () => {
           getRecords();
-      }, [sortOption]
+      }, [sortOption, filters]
   )
+
+
+  useEffect(
+    () => {
+        getCategories();
+    }, []
+)
 
   // use a function to update both checked and recordId states
   function updateChecked(id) {
@@ -128,15 +157,25 @@ export default function RecordHistory() {
   }
 
   const deleteRecords = (ids) => {
+
+    let accounts = data.accounts
     // Use the map method to create a new array of data with modified records
-    let newData = data.map(item => {
-      // For each item in the data array, filter out the records that match the ids
-      let newRecords = item.records.filter(record => !ids.includes(record._id));
-      // Return a new object with the same date and the new records
-      return {...item, records: newRecords};
-    });
-    // Use the filter method to remove the items that have no records
-    return newData.filter(item => item.records.length > 0);
+    if (sortOption.sortBy === 'date') {
+      let newData = data.response.map(item => {
+        // For each item in the response array, filter out the records that match the ids
+        let newRecords = item.records.filter(record => !ids.includes(record._id));
+        // Return a new object with the same date and the new records
+        return {...item, records: newRecords};
+      });
+      // Use the filter method to remove the items that have no records
+      let filtered_data = newData.filter(item => item.records.length > 0);
+      return {response: filtered_data, accounts: accounts}
+    } else {
+      let newData = data.response.filter(record => !ids.includes(record._id));
+        // Return a new object with the same date and the new records
+        return {response: newData, accounts: accounts};
+    }
+    
   };
 
   let deleteSelected = async () => {
@@ -144,30 +183,32 @@ export default function RecordHistory() {
     let record_data = {
       "record_ids": Object.keys(checked)
     }
-    console.log(record_data)
     try {
       let response = await api.delete('/records/delete', {data: record_data})
       if (await response.status === 204) {
         let newData = deleteRecords(Object.keys(checked));
         setData(newData);
         setChecked({})
-        console.log(data)
       }
     } catch (error) {
-      console.log(error.response.data)
+      console.log(error.response)
     }
   }
 
-  if (loading) {
-    return (<Box sx={{height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <CircularProgress />
-            </Box> 
-            )
-  } else {
+  let handleClickOnFilter = () => {
+    setOpenedFilter(!openedFilter)
+  }
+
+
+  // console.log(data.accounts)
+  console.log(filters)
+  // console.log(data)
+
   return (
+    <div>
     <Box display="flex">
     {opened && <FormDialog opened={opened} onClose={handleClose} onSubmit={getRecords}/>}
-    <Box sx={{bgcolor: "#f5fffe", width: "25%", height: "10%", paddingBottom: "2%", mt: "8.5%", ml: "1%", "borderRadius": "15px", boxShadow: 3}}
+    <Box sx={{bgcolor: "#f5fffe", width: "23%", height: "10%", paddingBottom: "2%", mt: "8.5%", ml: "1%", "borderRadius": "15px", boxShadow: 3}}
     >
       <Button variant='contained' size='small' onClick={handleClickOpen}
       sx={{ml: '22.5%', mt: "10%", mr: "5%", backgroundColor: "#30b864", ":hover": {bgcolor: "#289953", color: "white"}}}>
@@ -186,7 +227,28 @@ export default function RecordHistory() {
           <MenuItem value={2}>Amount (desc)</MenuItem>
           <MenuItem value={3}>Amount (asc)</MenuItem>
         </Select>
-      </FormControl>
+      </FormControl> 
+      <Typography sx={{ml: "5%", mt: "5%"}} variant='subtitle1'>
+       <b>Filters</b>
+      </Typography>
+      <List>
+      <ListItem direction='row' alignItems='center' onClick={handleClickOnFilter} button>
+      <Typography sx={{ml: "5%"}} variant='subtitle1'>
+       Categories
+      </Typography>
+      {openedFilter ? <ExpandLess /> : <ExpandMore />}
+      </ListItem>
+     
+      <Collapse in={openedFilter} timeout="auto">
+      {categories && (  
+      <CategoryList categories={categories} setFilters={setFilters}/>
+      )}
+      </Collapse>
+      
+      <ListItem alignItems='center' width="100%" sx={{padding: 0}}>
+      {data.accounts && (<AccountFilter accounts={data.accounts} setFilters={setFilters}/>)}
+      </ListItem>
+      </List>
     </Box>
     <Box sx={{ mt: "1%", width: '100%'}}>
       
@@ -196,8 +258,10 @@ export default function RecordHistory() {
         disabled={!isSelected()}>
           <DeleteIcon /> &nbsp;Delete record(s)
         </Button>
+
+
         <Stack sx={{mt: "2%"}}>
-        {data && data.map((item, index) => (
+        {data.response && data.response.map((item, index) => (
           <Stack key={index}>
           { (sortOption.sortBy === 'date') ? (
           <Stack spacing={2} key={`sss-111`} sx={{ml: "5%"}}>
@@ -208,7 +272,7 @@ export default function RecordHistory() {
 
           {item.records && item.records.map((record) => (
           <Item key={record._id} sx={{mb: "1.5%", display: "flex", alignItems: "center"}}>
-          <Checkbox sx={{"width": "2%", position: "relative"}} checked={checked[record._id]} onChange={() => {updateChecked(record._id)}} />
+          <Checkbox sx={{"width": "2.5%", position: "relative"}} checked={checked[record._id]} onChange={() => {updateChecked(record._id)}} />
           <Typography sx={{ml: "2%", color: "black", width: "15%"}}><b>{record.category}</b></Typography>
           <Typography sx={{ml: "4%"}}>{record.account_name}</Typography>
           <RecordAmount recordType={record.record_type} amount={record.amount}/>
@@ -218,7 +282,7 @@ export default function RecordHistory() {
           </Stack> ) : (
           <Stack spacing={2} key={`stack-${item._id}`} sx={{ml: "5%"}}>
           <Item key={item._id} sx={{mb: "1.5%", display: "flex", alignItems: "center"}}>
-          <Checkbox sx={{"width": "2%", position: "relative"}} checked={checked[item._id]} onChange={() => {updateChecked(item._id)}} />
+          <Checkbox sx={{"width": "2.5%", position: "relative"}} checked={checked[item._id]} onChange={() => {updateChecked(item._id)}} />
           <Typography sx={{ml: "2%", color: "black", width: "15%"}}><b>{item.category}</b></Typography>
           <Typography sx={{ml: "4%"}}>{item.account_name}</Typography>
           {item.record_type && (<RecordAmount recordType={item.record_type} amount={item.amount}/>)}
@@ -232,6 +296,6 @@ export default function RecordHistory() {
       </Stack>
     </Box>
     </Box>
-    )
+    
+    </div>)
   }
-}

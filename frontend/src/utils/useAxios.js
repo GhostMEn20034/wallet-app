@@ -17,16 +17,20 @@ const useAxios = () => {
     axiosInstance.interceptors.request.use(async req => {
     
         const user = jwt_decode(authTokens.access_token);
-        let current_date = new Date().toUTCString();
-        let isExpired = new Date(user.exp * 1000).toUTCString() > current_date;
+        let date = new Date()
+        let current_date = new Date(date.toUTCString()).getTime()
+        let isExpired = user.exp * 1000 > current_date / 1000;
         if(isExpired) {
+            console.log(user.exp)
+            console.log(current_date / 1000)
+        
             return req
         } else {
-            // console.log(new Date(user.exp * 1000) > current_date)
-            // console.log(user.exp)
-            // console.log(`Now ---- ${current_date}`);
-            // console.log(`User exp ---- ${new Date(user.exp * 1000).toUTCString()}`)
-            // console.log("Expired")
+            console.log(new Date(user.exp * 1000) > current_date)
+            console.log(user.exp)
+            console.log(`Now ---- ${current_date}`);
+            console.log(`User exp ---- ${new Date(user.exp * 1000)}`)
+            console.log("Expired")
             try {
                 let response = await axios.post(`${baseUrl}/auth/token/refresh`, {
                     refresh_token: authTokens.refresh_token
