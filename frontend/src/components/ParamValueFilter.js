@@ -15,7 +15,7 @@ function useHasChanged(value) {
   }
   
 
-export default function AccountFilter ({accounts, setFilters}) {
+export default function ParamValueFilter ({filterNameVisible,filterNameInner ,objects, setFilters}) {
     let [open, setOpen] = useState(false);
 
 
@@ -28,14 +28,14 @@ export default function AccountFilter ({accounts, setFilters}) {
         // Only run the effect if checked has changed
         if (checkedHasChanged) {
         //   console.log(num);
-          let selectedAccounts = checked;
+          let selectedValues = checked;
           console.log("Hello");
     
         //   setNum((prev) => {
         //     return prev + 1;
         //   });
           setFilters((prevFilters) => {
-            return { ...prevFilters, accounts: selectedAccounts };
+            return { ...prevFilters, [filterNameInner]: selectedValues };
           });
         }
       }, [checked, checkedHasChanged]);  
@@ -70,10 +70,10 @@ export default function AccountFilter ({accounts, setFilters}) {
     console.log(checked)
     return (
         <Stack sx={{width: "100%"}}>
-            <List>
+            <List sx={{py: 0}}>
             <ListItem button sx={{width: "100%"}} onClick={handleClick}>
             <Stack direction="row" alignItems='center' sx={{ml: "5%"}}>
-                <ListItemText primary="Accounts" />
+                <ListItemText primary={filterNameVisible.charAt(0).toUpperCase() + filterNameVisible.slice(1)} />
                 {open ? <ExpandLess /> : <ExpandMore />}
             </Stack>
             </ListItem>
@@ -81,12 +81,12 @@ export default function AccountFilter ({accounts, setFilters}) {
             <List>
                 <ListItem sx={{ marginLeft: "5%", padding: 0 }}>
                 <Checkbox checked={isEmpty()} onChange={handleAll} />
-                <ListItemText primary="All accounts" primaryTypographyProps={{fontSize: '15px'}} />
+                <ListItemText primary={"All " + `${filterNameVisible}`} primaryTypographyProps={{fontSize: '15px'}} />
                 </ListItem>
-                {accounts.map((account) => (
+                {objects.map((obj) => (
                     <ListItem sx={{ marginLeft: "5%", padding: 0 }}>
-                    <Checkbox checked={checked.includes(account.id)} onChange={handleChange(account.id)} />
-                    <ListItemText primary={account.name} primaryTypographyProps={{fontSize: '15px'}} />
+                    <Checkbox checked={checked.includes(obj.id)} onChange={handleChange(obj.id)} />
+                    <ListItemText primary={obj.name} primaryTypographyProps={{fontSize: '15px'}} />
                     </ListItem>
                 ))}
                 

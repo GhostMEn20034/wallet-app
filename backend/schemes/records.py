@@ -54,14 +54,24 @@ class DeleteRecordsData(BaseModel):
 
 class RecordFilter(BaseModel):
     categories: Optional[List[str]] = Field(fastapi.Query([]))
-    min_amount: Optional[condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))] = None
-    max_amount: Optional[condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))] = None
+    min_amount: Optional[int] = None
+    max_amount: Optional[int] = None
+    record_types: Optional[List[RecordType]] = Field(fastapi.Query([]))
+
+    @validator("record_types")
+    def record_types_default(cls, v):
+        if not v:
+            return list(RecordType)
+        return v
+
+    class Config:
+        use_enum_values = True
 
     class Config:
         query_model = True
         schema_extra = {
             "example": {
-                "category": ["Dwelling", "Entertainment"],
+                "categories": ["Dwelling", "Entertainment"],
                 "min_amount": 10.00,
                 "max_amount": 100.00
             },

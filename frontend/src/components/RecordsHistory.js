@@ -13,9 +13,9 @@ import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {FormControl, MenuItem, ListItem, ListItemText } from '@mui/material';
 import FormDialog from './AddRecord';
-import CircularProgress from '@mui/material/CircularProgress';
 import CategoryList from './CategoryFilter';
-import AccountFilter from './AccountFilter';
+import ParamValueFilter from './ParamValueFilter';
+import AmountRange from './AmountRange';
 
 
 function RecordAmount({recordType, amount}) {
@@ -57,7 +57,12 @@ export default function RecordHistory() {
       const qs = require('qs')
 
       let params = { sort_by: sortOption.sortBy, order: sortOption.order, categories: filters.categories ? filters.categories : undefined,
-                     account_ids: filters.accounts ? filters.accounts : undefined };
+                     account_ids: filters.accounts ? filters.accounts : undefined,
+                     record_types: filters.recordTypes ? filters.recordTypes : undefined,
+                     min_amount: filters.minAmount ? filters.minAmount : undefined,
+                     max_amount: filters.maxAmount ? filters.maxAmount : undefined
+                    };
+                     
       let response = await api.get('/records/', {params: params, paramsSerializer: {
         // Use the 'indices' option to remove the brackets
         serialize: params => qs.stringify(params, {indices: false})
@@ -199,6 +204,31 @@ export default function RecordHistory() {
     setOpenedFilter(!openedFilter)
   }
 
+  let combineArrays = (ids, names) => {
+    return ids.map ((id, index) => {
+      return { id: id, name: names[index] };
+    });
+  }
+
+  let formParamValueFilters = () => {
+    let filters = [
+      {
+        filterNameInner: "accounts",
+        filterNameVisible: "accounts",
+        objects: data.accounts,
+      },
+      {
+        filterNameInner: "recordTypes",
+        filterNameVisible: "record types",
+        objects: combineArrays(
+          ["Income", "Expense", "Transfer income", "Transfer withdrawal"],
+          ["Income", "Expense", "Transfer income", "Transfer withdrawal"]
+        ),
+      },
+    ]
+
+    return filters
+  }
 
   // console.log(data.accounts)
   console.log(filters)
@@ -244,10 +274,20 @@ export default function RecordHistory() {
       <CategoryList categories={categories} setFilters={setFilters}/>
       )}
       </Collapse>
-      
-      <ListItem alignItems='center' width="100%" sx={{padding: 0}}>
-      {data.accounts && (<AccountFilter accounts={data.accounts} setFilters={setFilters}/>)}
-      </ListItem>
+
+      {data.accounts && (
+      formParamValueFilters().map((filter) => (
+          <ListItem alignItems="center" width="100%" sx={{ padding: 0}}>
+            <ParamValueFilter
+              filterNameInner={filter.filterNameInner}
+              filterNameVisible={filter.filterNameVisible}
+              objects={filter.objects}
+              setFilters={setFilters}
+            />
+          </ListItem>
+        ))
+      )}
+      <AmountRange setFilters={setFilters}/>
       </List>
     </Box>
     <Box sx={{ mt: "1%", width: '100%'}}>

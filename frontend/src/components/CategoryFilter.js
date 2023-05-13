@@ -21,10 +21,12 @@ function SubcategoryItem({ text, category, checked, setChecked }) {
     }
   };
 
-  return (
+  const isChecked = checked[category]?.includes(text) ? true : false;
+
+  return ( 
     <ListItem sx={{ marginLeft: "5%", padding: 0 }}>
       <Checkbox
-        checked={checked[category]?.includes(text)}
+        checked={isChecked}
         onChange={handleChange}
       />
       <ListItemText primary={text} primaryTypographyProps={{fontSize: '15px'}} />

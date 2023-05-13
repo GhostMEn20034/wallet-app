@@ -186,9 +186,11 @@ def create_filter_dict(properties: dict):
     filter_dict = {
         key: value for key, value in [
             ("category", {"$in": properties.get("categories")} if properties.get("categories") else None),
-            ("amount", {"$gte": float(properties.get("min_amount")),
-                        "$lte": float(properties.get("max_amount"))} if properties.get(
+            ("amount", {"$gte": properties.get("min_amount"),
+                        "$lte": properties.get("max_amount")} if properties.get(
                 "min_amount") and properties.get("max_amount") else None),
+
+            ("record_type", {"$in": properties.get("record_types") if properties.get("record_types") else None})
         ] if value is not None}
 
     return filter_dict

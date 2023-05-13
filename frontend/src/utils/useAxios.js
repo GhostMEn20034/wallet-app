@@ -1,4 +1,5 @@
 import axios from 'axios'
+import dayjs from 'dayjs'
 import jwt_decode from "jwt-decode";
 import { useContext } from 'react'
 import AuthContext from '../context/AuthContext'
@@ -19,10 +20,10 @@ const useAxios = () => {
         const user = jwt_decode(authTokens.access_token);
         let date = new Date()
         let current_date = new Date(date.toUTCString()).getTime()
-        let isExpired = user.exp * 1000 > current_date / 1000;
-        if(isExpired) {
-            console.log(user.exp)
-            console.log(current_date / 1000)
+        let isExpired = dayjs.unix(user.exp).diff(dayjs()) < 1;
+        if(!isExpired) {
+            console.log(`user exp ` + `${user.exp}`)
+            console.log(`current date ` + `${current_date / 1000}`)
         
             return req
         } else {
