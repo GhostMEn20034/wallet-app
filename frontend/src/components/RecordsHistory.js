@@ -11,11 +11,12 @@ import { Button, Select, Collapse, List } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {FormControl, MenuItem, ListItem, ListItemText } from '@mui/material';
+import {FormControl, MenuItem, ListItem} from '@mui/material';
 import FormDialog from './AddRecord';
 import CategoryList from './CategoryFilter';
 import ParamValueFilter from './ParamValueFilter';
 import AmountRange from './AmountRange';
+import DateRangePicker from './DateFilter';
 
 
 function RecordAmount({recordType, amount}) {
@@ -60,7 +61,9 @@ export default function RecordHistory() {
                      account_ids: filters.accounts ? filters.accounts : undefined,
                      record_types: filters.recordTypes ? filters.recordTypes : undefined,
                      min_amount: filters.minAmount ? filters.minAmount : undefined,
-                     max_amount: filters.maxAmount ? filters.maxAmount : undefined
+                     max_amount: filters.maxAmount ? filters.maxAmount : undefined,
+                     start_date: filters.startDate ? filters.startDate : undefined,
+                     end_date: filters.endDate ? filters.endDate : undefined
                     };
                      
       let response = await api.get('/records/', {params: params, paramsSerializer: {
@@ -237,13 +240,15 @@ export default function RecordHistory() {
   return (
     <div>
     <Box display="flex">
-    {opened && <FormDialog opened={opened} onClose={handleClose} onSubmit={getRecords}/>}
+    {opened && <FormDialog opened={opened} onClose={handleClose} onSubmit={getRecords} categories={categories} accounts={data.accounts}/>}
     <Box sx={{bgcolor: "#f5fffe", width: "23%", height: "10%", paddingBottom: "2%", mt: "8.5%", ml: "1%", "borderRadius": "15px", boxShadow: 3}}
-    >
+    > 
+      <Box spacing={0}>
       <Button variant='contained' size='small' onClick={handleClickOpen}
-      sx={{ml: '22.5%', mt: "10%", mr: "5%", backgroundColor: "#30b864", ":hover": {bgcolor: "#289953", color: "white"}}}>
+      sx={{width: "60%",left: "20%", mt: "10%", mr: "5%", backgroundColor: "#30b864", ":hover": {bgcolor: "#289953", color: "white"}}}>
         <AddCircleOutlineIcon /> &nbsp;Add record
       </Button>
+      </Box>
       <Typography sx={{ml: "5%", mt: "5%"}} variant='subtitle1'>
        Sort by:
       </Typography>
@@ -293,12 +298,16 @@ export default function RecordHistory() {
     <Box sx={{ mt: "1%", width: '100%'}}>
       
       <Stack sx={{mr: "1.5%"}}>
+        <Stack direction="row">
+        <Stack sx={{width: "20%", ml: "35%"}}>  
+        <DateRangePicker setFilters={setFilters}/>
+        </Stack>  
         <Button variant='contained' size='small' onClick={() => deleteSelected()}
-        sx={{backgroundColor: "red", width: "20%", ":hover": {bgcolor: "#db0804", color: "white"}, ml: "80%"}}
+        sx={{backgroundColor: "red", width: "20%", ":hover": {bgcolor: "#db0804", color: "white"}, ml: "25%"}}
         disabled={!isSelected()}>
           <DeleteIcon /> &nbsp;Delete record(s)
         </Button>
-
+        </Stack>
 
         <Stack sx={{mt: "2%"}}>
         {data.response && data.response.map((item, index) => (

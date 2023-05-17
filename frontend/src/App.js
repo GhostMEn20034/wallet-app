@@ -9,7 +9,6 @@ import SendOTP from './components/ResetPassword';
 import ConfirmOTP from './components/ConfirmResetCode';
 import RecordHistory from './components/RecordsHistory';
 
-
 function App() {
   return( 
     <BrowserRouter>

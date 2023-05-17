@@ -5,8 +5,8 @@ import { ExpandLess, ExpandMore } from "@mui/icons-material";
 
 export default function AmountRange({setFilters}) {
     const [open, setOpen] = useState(false);
-    const [minAmount, setMinAmount] = useState(0);
-    const [maxAmount, setMaxAmount] = useState(0);
+    const [minAmount, setMinAmount] = useState(1);
+    const [maxAmount, setMaxAmount] = useState(1);
 
 
     let handleMinAmount = (e) => {
@@ -20,8 +20,8 @@ export default function AmountRange({setFilters}) {
     }
 
     let handleReset = () => {
-        setMinAmount(0);
-        setMaxAmount(0);
+        setMinAmount(1);
+        setMaxAmount(1);
         // Uncomment these lines to also reset the filters
         setFilters((prevFilters) => {
           return { ...prevFilters, "minAmount": null, "maxAmount": null };

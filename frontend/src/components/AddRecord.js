@@ -16,28 +16,10 @@ import { InputLabel, Select, MenuItem } from "@mui/material";
 import { useState, useEffect } from 'react';
 import useAxios from '../utils/useAxios';
 
-const CategorySelect = ({onChoose, onReset}) => {
+const CategorySelect = ({onChoose, onReset, categories}) => {
     // The state variables for the selected category and subcategory
     const [category, setCategory] = useState("");
     const [subcategory, setSubcategory] = useState("");
-    const [responseData, setResponseData] = useState(null); 
-
-    let api = useAxios();
-
-  
-    let getCategories = async () => {
-        let response = await api.get("/categories/");
-        let data = await response.data
-
-        setResponseData(data)
-    }
-
-
-    useEffect(
-        () => {
-            getCategories();
-        }, []
-    );
 
     // The handler function for changing the category
     const handleCategoryChange = (event) => {
@@ -59,7 +41,7 @@ const CategorySelect = ({onChoose, onReset}) => {
     // The JSX element that renders the select menu
     return (  
       <div>
-      {responseData && (    
+      {categories && (    
       <div>  
       {!category ? (
         <div>
@@ -70,7 +52,7 @@ const CategorySelect = ({onChoose, onReset}) => {
             onChange={handleCategoryChange}
           >
             {/* Map over the response data and create a menu item for each category */}
-            {responseData.map((item) => (
+            {categories.map((item) => (
               <MenuItem key={item._id} value={item.name}>
                 {item.name}
               </MenuItem>
@@ -91,7 +73,7 @@ const CategorySelect = ({onChoose, onReset}) => {
               onChange={handleSubcategoryChange}
             >
               {/* Find the subcategories array that matches the selected category and create a menu item for each subcategory */}
-              {responseData
+              {categories
                 .find((item) => item.name === category)
                 .subcategories.map((subitem) => (
                   <MenuItem key={subitem.name} value={subitem.name}>
@@ -109,34 +91,17 @@ const CategorySelect = ({onChoose, onReset}) => {
   };
 
 
-export default function FormDialog({opened, onClose, onSubmit}) {
+export default function FormDialog({opened, onClose, onSubmit, accounts, categories}) {
 
   let [open, setOpen] = useState(opened);
 
   let [recordType, setRecordType] = useState("");
-  let [accounts, setAccounts] = useState(null);
   let [from, setFrom] = useState('');
   let [to, setTo] = useState('');
   let [amount, setAmount] = useState(null);
   let [category, setCategory] = useState("");
 
   let api = useAxios();
-
-  let getAccounts = async () => {
-    let response = await api.get("/accounts/");
-    let data = await response.data;
-
-    setAccounts(data);
-
-  }
-
-
-
-  useEffect(
-    () => {
-        getAccounts();
-    }, []
-  );
 
   useEffect(() => {
     setTo('');
@@ -238,7 +203,7 @@ export default function FormDialog({opened, onClose, onSubmit}) {
                     hidden
                 >
                     {accounts.map((account) => (
-                    <MenuItem key={account._id} value={account._id}>
+                    <MenuItem key={account.id} value={account.id}>
                         {account.name}
                     </MenuItem>
                     ))}
@@ -257,9 +222,9 @@ export default function FormDialog({opened, onClose, onSubmit}) {
                     hidden
                     >
                     {accounts
-                        .filter((account) => account._id !== from) // filter out the selected account from the first form
+                        .filter((account) => account.id !== from) // filter out the selected account from the first form
                         .map((account) => (
-                        <MenuItem key={account._id} value={account._id}>
+                        <MenuItem key={account.id} value={account.id}>
                             {account.name}
                         </MenuItem>
                         ))}
@@ -282,7 +247,7 @@ export default function FormDialog({opened, onClose, onSubmit}) {
             sx={{"mt": "2%"}}
           />
           <Box sx={{ display: recordType === "Transfer" ? "none" : "block" }}>
-          <CategorySelect onChoose={handleCategoryChoose} onReset={() => setCategory("")} />
+          <CategorySelect onChoose={handleCategoryChoose} onReset={() => setCategory("")} categories={categories}/>
           </Box>
         </DialogContent>
         <DialogActions>

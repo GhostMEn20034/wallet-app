@@ -52,11 +52,18 @@ class DeleteRecordsData(BaseModel):
     record_ids: List[PyObjectId]
 
 
+class DateRange(BaseModel):
+    start_date: datetime.datetime = Field()
+    end_date: datetime.datetime = Field()
+
+
 class RecordFilter(BaseModel):
     categories: Optional[List[str]] = Field(fastapi.Query([]))
-    min_amount: Optional[int] = None
-    max_amount: Optional[int] = None
+    min_amount: Optional[int]
+    max_amount: Optional[int]
     record_types: Optional[List[RecordType]] = Field(fastapi.Query([]))
+    start_date: Optional[datetime.datetime]
+    end_date: Optional[datetime.datetime]
 
     @validator("record_types")
     def record_types_default(cls, v):

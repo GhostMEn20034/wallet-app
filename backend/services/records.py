@@ -31,7 +31,7 @@ async def funds_transfer(sender: PyObjectId, receiver: PyObjectId, amount: float
                 return 1
 
 
-async def records_by_date(account_ids: List, filters:dict, reverse: bool):
+async def records_by_date(account_ids: List, filters: dict, reverse: bool):
     pipeline = [
         {
             "$lookup": {
@@ -114,7 +114,7 @@ async def create_record(record_data: dict, account: dict, user_id):
             increase_the_balance = await increment_the_balance(account.get("_id"), record_data.get("amount"))
             if increase_the_balance == 1:
                 del record_data["receiver"]
-                record_data["created_at"] = datetime.datetime.now()
+                record_data["created_at"] = datetime.datetime.utcnow()
                 created_record = await db["records"].insert_one(record_data)
                 return fastapi.responses.JSONResponse(status_code=fastapi.status.HTTP_200_OK,
                                                       content={"status": "The income was credited to your account"})
@@ -122,7 +122,7 @@ async def create_record(record_data: dict, account: dict, user_id):
             decrease_the_balance = await decrement_the_balance(account.get("_id"), record_data.get("amount"))
             if decrease_the_balance == 1:
                 del record_data["receiver"]
-                record_data["created_at"] = datetime.datetime.now()
+                record_data["created_at"] = datetime.datetime.utcnow()
                 created_record = await db["records"].insert_one(record_data)
                 return fastapi.responses.JSONResponse(status_code=fastapi.status.HTTP_200_OK, content={
                     "status": "Funds have been successfully withdrawn from your account"})
@@ -135,7 +135,7 @@ async def create_record(record_data: dict, account: dict, user_id):
                 if transfer == 1:
                     common_fields = {"sender": account.get("_id"),
                                      "receiver": record_data.get("receiver"), "amount": record_data.get("amount"),
-                                     "category": "Transfer, withdraw", "created_at": datetime.datetime.now()}
+                                     "category": "Transfer, withdraw", "created_at": datetime.datetime.utcnow()}
 
                     sender_data = {"account_id": account.get("_id"), **common_fields,
                                    "record_type": "Transfer withdrawal"}
@@ -183,6 +183,9 @@ async def records_by_amount(account_ids: List, filters: dict, reverse: bool):
 
 
 def create_filter_dict(properties: dict):
+    start_date = properties.get("start_date", datetime.datetime.utcnow() - datetime.timedelta(days=30))
+    end_date = properties.get("end_date", datetime.datetime.utcnow())
+
     filter_dict = {
         key: value for key, value in [
             ("category", {"$in": properties.get("categories")} if properties.get("categories") else None),
@@ -190,7 +193,10 @@ def create_filter_dict(properties: dict):
                         "$lte": properties.get("max_amount")} if properties.get(
                 "min_amount") and properties.get("max_amount") else None),
 
-            ("record_type", {"$in": properties.get("record_types") if properties.get("record_types") else None})
+            ("record_type", {"$in": properties.get("record_types") if properties.get("record_types") else None}),
+            ("created_at", {"$gte": start_date, "$lte": end_date} if properties.get("start_date") and properties.get(
+                "end_date") else None)
+
         ] if value is not None}
 
     return filter_dict
