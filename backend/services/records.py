@@ -33,69 +33,87 @@ async def funds_transfer(sender: PyObjectId, receiver: PyObjectId, amount: float
 
 async def records_by_date(account_ids: List, filters: dict, reverse: bool):
     pipeline = [
-        {
-            "$lookup": {
-                "from": "accounts",
-                "localField": "account_id",
-                "foreignField": "_id",
-                "as": "account"
-            }
-        },
-        {
-            "$unwind": "$account"
-        },
+        # Sort the records by date in descending order
+        {"$sort": {"created_at": -1 if reverse else 1}},
+        # Join the records collection with the accounts collection
+        {"$lookup": {
+            "from": "accounts",
+            "localField": "account_id",
+            "foreignField": "_id",
+            "as": "account"
+        }},
+        # Unwind the account array
+        {"$unwind": "$account"},
         {
             "$match": {
                 "account_id": {"$in": account_ids}, **filters
             }
         },
-        # Add a new field called date that only contains the year-month-day part of created_at
-        {
-            "$addFields": {
-                "date": {
-                    "$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}
+        # Project only the account_name field and rename the currency and color fields
+        {"$project": {
+            "_id": 1,
+            "account_id": 1,
+            "amount": 1,
+            "category": 1,
+            "record_type": 1,
+            "created_at": 1,
+            "account_name": "$account.name",
+            "account_currency": "$account.currency",
+            "account_color": "$account.color"
+        }},
+        # Group the records by date
+        {"$group": {
+            "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+            "records": {"$push": "$$ROOT"},
+            # Use $cond to separate amounts based on the record_type
+            # Calculate the sum of income and transfer income
+            "income_amount": {
+                "$sum": {
+                    "$cond": [
+                        {
+                            "$in": [
+                                "$record_type",
+                                ["Income"]
+                            ]
+                        },
+                        "$amount",
+                        0
+                    ]
+                }
+            },
+            # Calculate the sum of expense and transfer withdrawal
+            "expense_amount": {
+                "$sum": {
+                    "$cond": [
+                        {
+                            "$in": [
+                                "$record_type",
+                                ["Expense"]
+                            ]
+                        },
+                        "$amount",
+                        0
+                    ]
                 }
             }
-        },
-
-        {
-            "$sort": {
-                "created_at": -1 if reverse else 1
+        }},
+        # Project the fields to match the desired format
+        {"$project": {
+            "_id": 0,
+            "date": "$_id",
+            "records": 1,
+            "total_amount": {
+                "$round": [
+                    {
+                        "$subtract": [
+                            "$income_amount",
+                            "$expense_amount"
+                        ]
+                    },
+                    2
+                ]
             }
-        },
-        # Group by date and push the records into an array called records
-        {
-            "$group": {
-                "_id": "$date",
-                "records": {"$push": "$$ROOT"}
-            }
-        },
-
-        # Project only the fields that you need
-        {
-            "$project": {
-                "_id": 0,
-                "date": "$_id",
-                "records": {
-                    # Use $map to add account_name for each record
-                    "$map": {
-                        "input": "$records",
-                        "as": "record",
-                        "in": {
-                            "_id": "$$record._id",
-                            "account_id": "$$record.account_id",
-                            "receiver": "$$record.receiver",
-                            "amount": "$$record.amount",
-                            "category": "$$record.category",
-                            "record_type": "$$record.record_type",
-                            "created_at": "$$record.created_at",
-                            # Add account_name from account document
-                            "account_name": "$$record.account.name"
-                        }
-                    }
-                }
-            }
-        },
+        }},
         {
             "$sort": {
                 "date": -1 if reverse else 1,
@@ -173,7 +191,8 @@ async def records_by_amount(account_ids: List, filters: dict, reverse: bool):
                 "account_id": {"$in": account_ids}, **filters
             }
         },
-        {"$addFields": {"account_name": "$account.name"}},
+        {"$addFields": {"account_name": "$account.name", "account_currency": "$account.currency",
+                        "account_color": "$account.color"}},
         {"$sort": {"amount": -1 if reverse else 1}},
         {"$limit": 100}
     ]

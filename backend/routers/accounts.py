@@ -8,6 +8,7 @@ from schemes.accounts import Account, CreateAccountModel, UpdateAccountModel
 from dependencies import get_current_user
 from schemes.auth import UserId
 from schemes.users import PyObjectId
+from services.accounts import get_accounts
 from fastapi.responses import JSONResponse
 from utils import convert_decimal
 
@@ -27,23 +28,28 @@ async def create_an_account(user_token: UserId = fastapi.Depends(get_current_use
     if user:
         account = account.dict(exclude_none=True)
         account.update({"user": {"id": user.get("_id"), "first_name": user.get("first_name")},
-                        "created_at": str(datetime.datetime.now()), "modified_at": str(datetime.datetime.now())})
+                        "created_at": datetime.datetime.utcnow(), "modified_at": datetime.datetime.utcnow()})
         inserted_account = await db["accounts"].insert_one(convert_decimal(account))
         return account
 
 
-@router.get("/", response_description="Account list", response_model=List[Account], response_model_exclude_none=True)
-async def account_list(user_token: UserId = fastapi.Depends(get_current_user)):
-    accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
+@router.get("/", response_description="Account list", response_model_exclude_none=True)
+async def account_list(user_token: UserId = fastapi.Depends(get_current_user),
+                       sort_by: str = fastapi.Query("name", enum=["name", "balance"]),
+                       order: str = fastapi.Query("asc", enum=["asc", "desc"]),
+                       ):
+    user = await db["users"].find_one({"_id": user_token.id})
 
+    reverse = bool(order == "desc")
+    accounts = await get_accounts(user_token.id, user.get("primary_currency"), reverse, sort_by)
     return accounts
 
 
 @router.put("/{account_id}/update")
 async def update_bank_account(account_id: PyObjectId, user_token: UserId = fastapi.Depends(get_current_user),
-                         account: UpdateAccountModel = fastapi.Body(...)):
+                              account: UpdateAccountModel = fastapi.Body(...)):
     account = {k: v for k, v in account.dict().items() if v is not None}
-    account["modified_at"] = datetime.datetime.now()
+    account["modified_at"] = datetime.datetime.utcnow()
 
     user_id = user_token.id
     if len(account) >= 1:

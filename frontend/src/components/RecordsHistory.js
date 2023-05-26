@@ -17,9 +17,9 @@ import CategoryList from './CategoryFilter';
 import ParamValueFilter from './ParamValueFilter';
 import AmountRange from './AmountRange';
 import DateRangePicker from './DateFilter';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
-
-function RecordAmount({recordType, amount}) {
+function RecordAmount({recordType, amount, currency}) {
   const recordStyles = {
     "Expense": {color: "red", sign: "-"},
     "Income": {color: "green", sign: ""},
@@ -30,7 +30,7 @@ function RecordAmount({recordType, amount}) {
   const {color, sign} = recordStyles[recordType];
 
   return (
-  <Typography sx={{display: "flex", color: color, "ml": "auto"}}><b>{sign + amount + " USD"}</b></Typography>
+  <Typography sx={{display: "flex", color: color, "ml": "auto"}}><b>{sign + amount + ` ${currency}`}</b></Typography>
   )
 }
 
@@ -244,8 +244,9 @@ export default function RecordHistory() {
     <Box sx={{bgcolor: "#f5fffe", width: "23%", height: "10%", paddingBottom: "2%", mt: "8.5%", ml: "1%", "borderRadius": "15px", boxShadow: 3}}
     > 
       <Box spacing={0}>
+      <Typography variant='h5' sx={{mt: "5%", ml: "5%"}}>Records</Typography>  
       <Button variant='contained' size='small' onClick={handleClickOpen}
-      sx={{width: "60%",left: "20%", mt: "10%", mr: "5%", backgroundColor: "#30b864", ":hover": {bgcolor: "#289953", color: "white"}}}>
+      sx={{width: "60%",left: "20%", mt: "5%", mr: "5%", backgroundColor: "#30b864", ":hover": {bgcolor: "#289953", color: "white"}}}>
         <AddCircleOutlineIcon /> &nbsp;Add record
       </Button>
       </Box>
@@ -322,9 +323,10 @@ export default function RecordHistory() {
           {item.records && item.records.map((record) => (
           <Item key={record._id} sx={{mb: "1.5%", display: "flex", alignItems: "center"}}>
           <Checkbox sx={{"width": "2.5%", position: "relative"}} checked={checked[record._id]} onChange={() => {updateChecked(record._id)}} />
-          <Typography sx={{ml: "2%", color: "black", width: "15%"}}><b>{record.category}</b></Typography>
-          <Typography sx={{ml: "4%"}}>{record.account_name}</Typography>
-          <RecordAmount recordType={record.record_type} amount={record.amount}/>
+          <Typography sx={{ml: "2%", mr: "2%", color: "black", width: "15%"}}><b>{record.category}</b></Typography>
+          <FiberManualRecordIcon fontSize='small' sx={{color: record.account_color}}/>
+          <Typography sx={{ml: "1%"}}>{record.account_name}</Typography>
+          <RecordAmount recordType={record.record_type} amount={record.amount} currency={record.account_currency}/>
           </Item>
           ))}
 
@@ -332,9 +334,10 @@ export default function RecordHistory() {
           <Stack spacing={2} key={`stack-${item._id}`} sx={{ml: "5%"}}>
           <Item key={item._id} sx={{mb: "1.5%", display: "flex", alignItems: "center"}}>
           <Checkbox sx={{"width": "2.5%", position: "relative"}} checked={checked[item._id]} onChange={() => {updateChecked(item._id)}} />
-          <Typography sx={{ml: "2%", color: "black", width: "15%"}}><b>{item.category}</b></Typography>
-          <Typography sx={{ml: "4%"}}>{item.account_name}</Typography>
-          {item.record_type && (<RecordAmount recordType={item.record_type} amount={item.amount}/>)}
+          <Typography sx={{ml: "2%",mr: "2%", color: "black", width: "15%"}}><b>{item.category}</b></Typography>
+          <FiberManualRecordIcon fontSize='small' sx={{color: item.account_color}}/>
+          <Typography sx={{ml: "1%"}}>{item.account_name}</Typography>
+          {item.record_type && (<RecordAmount recordType={item.record_type} amount={item.amount} currency={item.account_currency}/>)}
           </Item>
           </Stack>
           )

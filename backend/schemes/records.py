@@ -35,6 +35,8 @@ class Record(BaseModel):
     id: PyObjectId = Field(alias='_id')
     account_id: PyObjectId
     account_name: str
+    account_currency: str
+    account_color: str
     sender: Optional[PyObjectId]
     receiver: Optional[PyObjectId]
     amount: condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))
@@ -44,6 +46,7 @@ class Record(BaseModel):
 
 
 class AggregatedRecords(BaseModel):
+    total_amount: float
     agg_date: datetime.date = Field(alias='date')
     agg_records: List[Record] = Field(alias='records')
 

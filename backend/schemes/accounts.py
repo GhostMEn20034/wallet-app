@@ -20,17 +20,12 @@ class Account(BaseModel):
     name: str
     balance: condecimal(decimal_places=2)
     bank_account: Optional[str]
-    user: ReferenceToUser
-    created_at: datetime.datetime = datetime.datetime.now()
-    modified_at: datetime.datetime = datetime.datetime.now()
+    currency: str
+    color: str
+    converted_balance: Optional[float]
 
     class Config:
         validate_assignment = True
-
-    @root_validator
-    def number_validator(cls, values):
-        values["modified_at"] = datetime.datetime.now()
-        return values
 
     @validator('balance', pre=True, always=True)
     def set_balance(cls, v):
@@ -41,9 +36,12 @@ class CreateAccountModel(BaseModel):
     name: str
     balance: condecimal(decimal_places=2) = 0
     bank_account: Optional[str]
+    primary_currency: str
+    color: str
 
 
 class UpdateAccountModel(BaseModel):
     name: Optional[str]
     balance: Optional[condecimal(decimal_places=2)]
     bank_account: Optional[str]
+    color: Optional[str]

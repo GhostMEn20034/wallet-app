@@ -8,6 +8,7 @@ import PrivateRoute from './utils/PrivateRoute';
 import SendOTP from './components/ResetPassword';
 import ConfirmOTP from './components/ConfirmResetCode';
 import RecordHistory from './components/RecordsHistory';
+import AcccountList from './components/Accounts';
 
 function App() {
   return( 
@@ -26,6 +27,11 @@ function App() {
           <Route path='/records' element={
             <PrivateRoute>
             <RecordHistory />  
+            </PrivateRoute>
+          }/>
+          <Route path='/accounts' element={
+            <PrivateRoute>
+            <AcccountList />  
             </PrivateRoute>
           }/>
           <Route path='/reset-password' element={<SendOTP />}/>
