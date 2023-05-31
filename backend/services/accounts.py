@@ -1,21 +1,6 @@
 from client import db
 from services.get_conversion_rates import get_conversion_rates
-import bson.json_util
-
-
-def convert_to_primary_currency(account, rates, primary_currency):
-    # Get the currency rate for the primary currency
-    primary_rate = rates[primary_currency]
-    # Get the account balance and currency
-    balance = account["balance"]
-    currency = account["currency"]
-    # Get the currency rate for the account currency
-    rate = rates[currency]
-    # Convert the balance to primary currency by multiplying by the ratio of rates
-    converted_balance = balance * (rate / primary_rate)
-    # Add a new field to store the converted balance
-    account["converted_balance"] = converted_balance
-    return account
+from services.get_current_dates import get_current_dates
 
 
 async def get_accounts(user_id, primary_currency, reverse: bool, sort_by="name"):
@@ -34,6 +19,7 @@ async def get_accounts(user_id, primary_currency, reverse: bool, sort_by="name")
                 "bank_account": 1,
                 "currency": 1,
                 "color": 1,
+                "created_at": 1,
                 "converted_balance": {
                     "$round": [
                         {"$multiply": ["$balance", {"$divide": [conversion_rates[primary_currency],
@@ -51,3 +37,125 @@ async def get_accounts(user_id, primary_currency, reverse: bool, sort_by="name")
 
     accounts = await db["accounts"].aggregate(pipeline).to_list(50)
     return accounts
+
+
+async def get_account(user_id, account_id):
+    dates = get_current_dates()
+
+    pipeline = [
+        {
+            "$match": {
+                "user.id": user_id,
+                "_id": account_id
+            }
+        },
+        {
+            '$lookup': {
+                'from': 'balanceTrend',
+                'localField': '_id',
+                'foreignField': 'account_id',
+                'as': 'balanceTrend'
+            }
+        },
+        {
+            '$addFields': {
+                # use the datetimes from the function to filter the balanceTrend documents
+                'current_period': {
+                    '$filter': {
+                        'input': '$balanceTrend',
+                        'as': 'item',
+                        'cond': {
+                            '$and': [
+                                {
+                                    '$gte': [
+                                        '$$item.date',
+                                        dates['first_day_of_current_date']
+                                    ]
+                                },
+                                {
+                                    '$lte': [
+                                        '$$item.date',
+                                        dates['last_day_of_current_date']
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
+                'past_period': {
+                    '$let': {
+                        'vars': {
+                            'filtered_balanceTrend': {
+                                '$filter': {
+                                    'input': '$balanceTrend',
+                                    'as': 'item',
+                                    'cond': {
+                                        '$and': [
+                                            {
+                                                '$gte': [
+                                                    '$$item.date',
+                                                    dates['first_day_of_past_date']
+                                                ]
+                                            },
+                                            {
+                                                '$lte': [
+                                                    '$$item.date',
+                                                    dates['last_day_of_past_date']
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        'in': {
+                            '$cond': {
+                                'if': {'$eq': ['$$filtered_balanceTrend', []]},
+                                'then': [
+                                    {
+                                        '$arrayElemAt': [
+                                            '$balanceTrend',
+                                            {
+                                                '$indexOfArray': [
+                                                    '$balanceTrend.date',
+                                                    {
+                                                        '$min': '$balanceTrend.date'
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                'else': '$$filtered_balanceTrend'
+                            }
+                        }
+                    },
+                }
+            }
+        },
+        {"$addFields": {
+            "percentage_change": {
+                "$let": {
+                    "vars": {
+                        'last_past': {
+                            '$arrayElemAt':
+                                ['$past_period', -1]
+                        },
+                        'last_current': {
+                            '$arrayElemAt': ['$current_period', -1]
+                        }
+
+                    },
+                    "in": {"$round": [
+                        {'$multiply': [{'$divide': [{'$subtract': ['$$last_current.balance', '$$last_past.balance']},
+                                                    '$$last_past.balance']}, 100]}, 2]}
+                }
+            }
+        }},
+        {'$project':
+            {'balanceTrend': 0}
+         }
+    ]
+
+    account = await db["accounts"].aggregate(pipeline).to_list(length=None)
+    return account[0]

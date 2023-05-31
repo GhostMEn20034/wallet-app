@@ -4,11 +4,11 @@ import pydantic
 import fastapi
 from bson import ObjectId
 from client import db
-from schemes.accounts import Account, CreateAccountModel, UpdateAccountModel
+from schemes.accounts import Account, CreateAccountModel, UpdateAccountModel, AggregatedAccounts
 from dependencies import get_current_user
 from schemes.auth import UserId
 from schemes.users import PyObjectId
-from services.accounts import get_accounts
+from services.accounts import get_accounts, get_account
 from fastapi.responses import JSONResponse
 from utils import convert_decimal
 
@@ -33,16 +33,21 @@ async def create_an_account(user_token: UserId = fastapi.Depends(get_current_use
         return account
 
 
-@router.get("/", response_description="Account list", response_model_exclude_none=True)
+@router.get("/", response_description="Account list", response_model=List[Account], response_model_exclude_none=True)
 async def account_list(user_token: UserId = fastapi.Depends(get_current_user),
                        sort_by: str = fastapi.Query("name", enum=["name", "balance"]),
                        order: str = fastapi.Query("asc", enum=["asc", "desc"]),
                        ):
     user = await db["users"].find_one({"_id": user_token.id})
-
     reverse = bool(order == "desc")
     accounts = await get_accounts(user_token.id, user.get("primary_currency"), reverse, sort_by)
     return accounts
+
+
+@router.get("/{account_id}", response_model=AggregatedAccounts)
+async def account_detail(account_id: PyObjectId, user_token: UserId = fastapi.Depends(get_current_user)):
+    account = await get_account(user_token.id, account_id)
+    return account if account else []
 
 
 @router.put("/{account_id}/update")

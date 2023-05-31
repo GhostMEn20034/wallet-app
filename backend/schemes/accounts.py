@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, condecimal, root_validator, validator, Field
 import datetime
 
@@ -23,6 +23,7 @@ class Account(BaseModel):
     currency: str
     color: str
     converted_balance: Optional[float]
+    created_at: datetime.datetime
 
     class Config:
         validate_assignment = True
@@ -45,3 +46,22 @@ class UpdateAccountModel(BaseModel):
     balance: Optional[condecimal(decimal_places=2)]
     bank_account: Optional[str]
     color: Optional[str]
+
+
+class BalanceTrend(BaseModel):
+    account_id: PyObjectId
+    balance: float
+    date: datetime.datetime
+
+
+class AggregatedAccounts(BaseModel):
+    id: PyObjectId = Field(alias="_id")
+    name: str
+    balance: condecimal(decimal_places=2)
+    bank_account: Optional[str]
+    currency: str
+    color: str
+    created_at: datetime.datetime
+    current_period: List[BalanceTrend]
+    past_period: List[BalanceTrend]
+    percentage_change: float

@@ -64,7 +64,6 @@ async def update_profile(user_token: UserId = fastapi.Depends(get_current_user),
 
 @router.delete("/profile/delete", status_code=fastapi.status.HTTP_204_NO_CONTENT)
 async def delete_profile(user_token: UserId = fastapi.Depends(get_current_user)):
-    user = await db["users"].delete_one({"_id": user_token.id})
     accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
     account_ids = [account["_id"] for account in accounts]
     if account_ids:

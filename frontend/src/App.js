@@ -9,6 +9,7 @@ import SendOTP from './components/ResetPassword';
 import ConfirmOTP from './components/ConfirmResetCode';
 import RecordHistory from './components/RecordsHistory';
 import AcccountList from './components/Accounts';
+import AccountDetail from './components/AccountDetail';
 
 function App() {
   return( 
@@ -34,6 +35,11 @@ function App() {
             <AcccountList />  
             </PrivateRoute>
           }/>
+          <Route path='/accounts/:id' element={
+            <PrivateRoute>
+            <AccountDetail />
+            </PrivateRoute>
+          } />
           <Route path='/reset-password' element={<SendOTP />}/>
           <Route path='/reset-password/otp' element={<ConfirmOTP />}/>
       </Routes>
