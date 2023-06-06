@@ -3,6 +3,7 @@ import datetime
 from typing import List
 from client import db, client
 from schemes.users import PyObjectId
+from services.get_conversion_rates import get_conversion_rates
 
 
 async def increment_the_balance(account_id: PyObjectId, amount: float):
@@ -31,7 +32,9 @@ async def funds_transfer(sender: PyObjectId, receiver: PyObjectId, amount: float
                 return 1
 
 
-async def records_by_date(account_ids: List, filters: dict, reverse: bool):
+async def records_by_date(account_ids: List, primary_currency: str, filters: dict, reverse: bool):
+    conversion_rates = await get_conversion_rates(primary_currency)
+
     pipeline = [
         # Sort the records by date in descending order
         {"$sort": {"created_at": -1 if reverse else 1}},
@@ -59,7 +62,14 @@ async def records_by_date(account_ids: List, filters: dict, reverse: bool):
             "created_at": 1,
             "account_name": "$account.name",
             "account_currency": "$account.currency",
-            "account_color": "$account.color"
+            "account_color": "$account.color",
+            "converted_currency": {
+                "$round": [
+                    {"$multiply": ["$amount", {"$divide": [1,
+                                                           {"$arrayElemAt": [list(conversion_rates.values()), {
+                                                               "$indexOfArray": [list(conversion_rates.keys()),
+                                                                                 "$account.currency"]}]}]}]}, 2]
+            }
         }},
         # Group the records by date
         {"$group": {
@@ -76,7 +86,7 @@ async def records_by_date(account_ids: List, filters: dict, reverse: bool):
                                 ["Income"]
                             ]
                         },
-                        "$amount",
+                        "$converted_currency",
                         0
                     ]
                 }
@@ -91,7 +101,7 @@ async def records_by_date(account_ids: List, filters: dict, reverse: bool):
                                 ["Expense"]
                             ]
                         },
-                        "$amount",
+                        "$converted_currency",
                         0
                     ]
                 }
@@ -173,7 +183,9 @@ async def create_record(record_data: dict, account: dict, user_id):
             return fastapi.responses.JSONResponse(status_code=400, content={"Status": "Something went wrong"})
 
 
-async def records_by_amount(account_ids: List, filters: dict, reverse: bool):
+async def records_by_amount(account_ids: List, primary_currency: str, filters: dict, reverse: bool):
+    conversion_rates = await get_conversion_rates(primary_currency)
+
     pipeline = [
         {
             "$lookup": {
@@ -184,17 +196,71 @@ async def records_by_amount(account_ids: List, filters: dict, reverse: bool):
             }
         },
         {
-            "$unwind": "$account"
-        },
-        {
             "$match": {
                 "account_id": {"$in": account_ids}, **filters
             }
         },
-        {"$addFields": {"account_name": "$account.name", "account_currency": "$account.currency",
-                        "account_color": "$account.color"}},
-        {"$sort": {"amount": -1 if reverse else 1}},
-        {"$limit": 100}
+        {
+            "$unwind": "$account"
+        },
+        {"$addFields": {
+            "account_name": "$account.name",
+            "account_currency": "$account.currency",
+            "account_color": "$account.color",
+            "converted_currency": {
+                "$round": [
+                    {"$multiply": ["$amount", {"$divide": [1,
+                                                           {"$arrayElemAt": [list(conversion_rates.values()), {
+                                                               "$indexOfArray": [list(conversion_rates.keys()),
+                                                                                 "$account.currency"]}]}]}]}, 2]
+            },
+        }},
+        {"$sort": {"converted_currency": -1 if reverse else 1}},
+        {"$group": {
+            "_id": None,
+            "records": {"$push": "$$ROOT"},
+            "income_amount": {
+                "$sum": {
+                    "$cond": [
+                        {
+                            "$in": [
+                                "$record_type",
+                                ["Income"]
+                            ]
+                        },
+                        "$converted_currency",
+                        0
+                    ]
+                }
+            },
+            # Calculate the sum of expense and transfer withdrawal
+            "expense_amount": {
+                "$sum": {
+                    "$cond": [
+                        {
+                            "$in": [
+                                "$record_type",
+                                ["Expense"]
+                            ]
+                        },
+                        "$converted_currency",
+                        0
+                    ]
+                }
+            }
+        }},
+        {"$addFields": {
+            "total": {"$round": [
+                    {
+                        "$subtract": [
+                            "$income_amount",
+                            "$expense_amount"
+                        ]
+                    },
+                    2
+                ]
+            }
+        }}
     ]
 
     records = await db["records"].aggregate(pipeline).to_list(100)
@@ -213,8 +279,7 @@ def create_filter_dict(properties: dict):
                 "min_amount") and properties.get("max_amount") else None),
 
             ("record_type", {"$in": properties.get("record_types") if properties.get("record_types") else None}),
-            ("created_at", {"$gte": start_date, "$lte": end_date} if properties.get("start_date") and properties.get(
-                "end_date") else None)
+            ("created_at", {"$gte": start_date, "$lte": end_date} if start_date and end_date else None)
 
         ] if value is not None}
 

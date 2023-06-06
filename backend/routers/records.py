@@ -1,4 +1,3 @@
-import datetime
 from typing import List, Tuple, Optional, Union
 import fastapi
 import pydantic
@@ -31,13 +30,16 @@ async def route_create_record(record_data: records.CreateRecordModel = fastapi.B
         return await create_record(record_data, account, user_token.id)
 
 
+#
 @router.get("/", response_model=records.ResponseOfRecords,
             response_model_exclude_none=True, response_model_by_alias=True)
 async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user),
                       sort_by: str = fastapi.Query("date", enum=["date", "amount"]),
                       order: str = fastapi.Query("desc", enum=["asc", "desc"]),
                       account_ids: Optional[List[PyObjectId]] = fastapi.Query([], style="commaDelimited"),
-                      other_filters: records.RecordFilter = fastapi.Depends(records.RecordFilter),):
+                      other_filters: records.RecordFilter = fastapi.Depends(records.RecordFilter), ):
+    user = await db["users"].find_one({"_id": user_token.id})
+    primary_currency = user.get("primary_currency")
     accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
 
     other_filters = other_filters.dict(exclude_none=True)
@@ -55,11 +57,18 @@ async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user
 
     match sort_by:
         case "date":
-            return {"response": await records_by_date(account_ids, filter_dict, reverse),
-                    "accounts": account_ids_and_names}
+            response = await records_by_date(account_ids, primary_currency, filter_dict, reverse)
+            return {"response": response,
+                    "accounts": account_ids_and_names,
+                    "primary_currency": primary_currency,
+                    "total": sum([record["total_amount"] for record in response])}
         case "amount":
-            return {"response": await records_by_amount(account_ids, filter_dict, reverse),
-                    "accounts": account_ids_and_names}
+            response = await records_by_amount(account_ids, primary_currency, filter_dict, reverse)
+            return {"response": response[0].get("records") if response else [],
+                    "accounts": account_ids_and_names,
+                    "total": round(response[0].get("total"), 2) if response else None,
+                    "primary_currency": primary_currency
+                    }
 
 
 @router.delete("/delete")

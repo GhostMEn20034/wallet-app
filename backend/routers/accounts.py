@@ -4,7 +4,7 @@ import pydantic
 import fastapi
 from bson import ObjectId
 from client import db
-from schemes.accounts import Account, CreateAccountModel, UpdateAccountModel, AggregatedAccounts
+from schemes.accounts import Account, CreateAccountModel, UpdateAccountModel, AggregatedAccount
 from dependencies import get_current_user
 from schemes.auth import UserId
 from schemes.users import PyObjectId
@@ -44,7 +44,7 @@ async def account_list(user_token: UserId = fastapi.Depends(get_current_user),
     return accounts
 
 
-@router.get("/{account_id}", response_model=AggregatedAccounts)
+@router.get("/{account_id}", response_model=AggregatedAccount)
 async def account_detail(account_id: PyObjectId, user_token: UserId = fastapi.Depends(get_current_user)):
     account = await get_account(user_token.id, account_id)
     return account if account else []

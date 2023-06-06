@@ -37,7 +37,7 @@ class CreateAccountModel(BaseModel):
     name: str
     balance: condecimal(decimal_places=2) = 0
     bank_account: Optional[str]
-    primary_currency: str
+    currency: str
     color: str
 
 
@@ -50,11 +50,12 @@ class UpdateAccountModel(BaseModel):
 
 class BalanceTrend(BaseModel):
     account_id: PyObjectId
+    initial: bool
     balance: float
     date: datetime.datetime
 
 
-class AggregatedAccounts(BaseModel):
+class AggregatedAccount(BaseModel):
     id: PyObjectId = Field(alias="_id")
     name: str
     balance: condecimal(decimal_places=2)
@@ -63,5 +64,4 @@ class AggregatedAccounts(BaseModel):
     color: str
     created_at: datetime.datetime
     current_period: List[BalanceTrend]
-    past_period: List[BalanceTrend]
     percentage_change: float

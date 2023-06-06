@@ -97,3 +97,5 @@ class Accounts(BaseModel):
 class ResponseOfRecords(BaseModel):
     response: Union[List[AggregatedRecords], List[Record]]
     accounts: List[Accounts]
+    primary_currency: str
+    total: float
