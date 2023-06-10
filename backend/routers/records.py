@@ -61,7 +61,7 @@ async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user
             return {"response": response,
                     "accounts": account_ids_and_names,
                     "primary_currency": primary_currency,
-                    "total": sum([record["total_amount"] for record in response])}
+                    "total": round(sum([record["total_amount"] for record in response]), 2)}
         case "amount":
             response = await records_by_amount(account_ids, primary_currency, filter_dict, reverse)
             return {"response": response[0].get("records") if response else [],

@@ -24,6 +24,7 @@ class CreateRecordModel(BaseModel):
     account_id: PyObjectId
     receiver: Optional[PyObjectId]
     amount: condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))
+    conversion_rate: Optional[condecimal(decimal_places=2, ge=decimal.Decimal(0.0099))]
     category: Optional[str]
     record_type: RecordTypeCreate
 
@@ -53,11 +54,6 @@ class AggregatedRecords(BaseModel):
 
 class DeleteRecordsData(BaseModel):
     record_ids: List[PyObjectId]
-
-
-class DateRange(BaseModel):
-    start_date: datetime.datetime = Field()
-    end_date: datetime.datetime = Field()
 
 
 class RecordFilter(BaseModel):

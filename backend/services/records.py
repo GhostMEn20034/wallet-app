@@ -3,7 +3,7 @@ import datetime
 from typing import List
 from client import db, client
 from schemes.users import PyObjectId
-from services.get_conversion_rates import get_conversion_rates
+from services.currency_utils import get_conversion_rates, get_converted_amount
 
 
 async def increment_the_balance(account_id: PyObjectId, amount: float):
@@ -18,18 +18,59 @@ async def decrement_the_balance(account_id: PyObjectId, amount: float):
     return account.modified_count
 
 
-async def funds_transfer(sender: PyObjectId, receiver: PyObjectId, amount: float):
+async def funds_transfer(sender, receiver, record_data: dict):
+    """
+    :param sender - account where funds will be withdrawn
+    :param receiver - account where funds will be transferred
+    :param record_data - dictionary storing information that it used
+    to form information about record
+
+
+    Function transfers fund from one account to another account
+    """
+    is_the_same_currency = bool(sender.get("currency") == receiver.get("currency"))
+
+    withdrawal_amount = record_data.get("amount")
+    if not is_the_same_currency:
+        """
+        Converts the withdrawal amount into the currency of receiver 
+        if there's no conversion_rate key in record_data
+        else it converts amount at the conversion_rate
+        """
+        withdrawal_amount = await get_converted_amount(record_data.get("amount"), sender.get("currency"),
+                                                       receiver.get("currency")) if not record_data.get(
+            "conversion_rate") else record_data.get("amount") * record_data.get("conversion_rate")
+
     async with await client.start_session() as s:
         async with s.start_transaction():
-            decrease_senders_balance = await db["accounts"].update_one({"_id": sender},
-                                                                       {"$inc": {"balance": round(-amount, 2)}},
+            decrease_senders_balance = await db["accounts"].update_one({"_id": sender.get("_id")},
+                                                                       {"$inc": {
+                                                                           "balance": round(-record_data.get("amount"),
+                                                                                            2)}},
                                                                        session=s)
-            increase_receivers_balance = await db["accounts"].update_one({"_id": receiver},
-                                                                         {"$inc": {"balance": round(amount, 2)}},
+            increase_receivers_balance = await db["accounts"].update_one({"_id": receiver.get("_id")},
+                                                                         {"$inc": {
+                                                                             "balance": withdrawal_amount}},
                                                                          session=s)
 
-            if decrease_senders_balance.modified_count == 1 and increase_receivers_balance.modified_count == 1:
-                return 1
+            common_fields = {"sender": sender.get("_id"),
+                             "receiver": record_data.get("receiver"),
+                             "category": "Transfer, withdraw", "created_at": datetime.datetime.utcnow()}
+
+            sender_data = {"account_id": sender.get("_id"), "amount": record_data.get("amount"), **common_fields,
+                           "record_type": "Transfer withdrawal"}
+
+            receiver_data = {"account_id": record_data.get("receiver"), "amount": withdrawal_amount, **common_fields,
+                             "record_type": "Transfer income"}
+
+            receiver_record = await db["records"].insert_one(receiver_data, session=s)
+            sender_record = await db["records"].insert_one(sender_data, session=s)
+
+    return fastapi.responses.JSONResponse(
+        status_code=fastapi.status.HTTP_200_OK,
+        content={
+            "status": "The funds have been transferred successfully"
+        })
 
 
 async def records_by_date(account_ids: List, primary_currency: str, filters: dict, reverse: bool):
@@ -158,26 +199,9 @@ async def create_record(record_data: dict, account: dict, user_id):
             receiver = await db["accounts"].find_one(
                 {"_id": record_data.get("receiver"), "user.id": user_id})
             if receiver:
-                transfer = await funds_transfer(account.get("_id"), record_data.get("receiver"),
-                                                record_data.get("amount"))
-                if transfer == 1:
-                    common_fields = {"sender": account.get("_id"),
-                                     "receiver": record_data.get("receiver"), "amount": record_data.get("amount"),
-                                     "category": "Transfer, withdraw", "created_at": datetime.datetime.utcnow()}
+                return await funds_transfer(account, receiver, record_data)
 
-                    sender_data = {"account_id": account.get("_id"), **common_fields,
-                                   "record_type": "Transfer withdrawal"}
-
-                    receiver_data = {"account_id": record_data.get("receiver"), **common_fields,
-                                     "record_type": "Transfer income"}
-
-                    receiver_record = await db["records"].insert_one(receiver_data)
-                    sender_record = await db["records"].insert_one(sender_data)
-                    return fastapi.responses.JSONResponse(
-                        status_code=fastapi.status.HTTP_200_OK,
-                        content={
-                            "status": "The funds have been transferred successfully"
-                        })
+            return fastapi.responses.JSONResponse(status_code=400, content={"Status": "Invalid receiver"})
 
         case _:
             return fastapi.responses.JSONResponse(status_code=400, content={"Status": "Something went wrong"})
@@ -250,16 +274,12 @@ async def records_by_amount(account_ids: List, primary_currency: str, filters: d
             }
         }},
         {"$addFields": {
-            "total": {"$round": [
-                    {
-                        "$subtract": [
-                            "$income_amount",
-                            "$expense_amount"
-                        ]
-                    },
-                    2
+            "total": {
+                "$subtract": [
+                    "$income_amount",
+                    "$expense_amount"
                 ]
-            }
+            },
         }}
     ]
 

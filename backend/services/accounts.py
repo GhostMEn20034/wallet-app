@@ -1,5 +1,5 @@
 from client import db
-from services.get_conversion_rates import get_conversion_rates
+from services.currency_utils import get_conversion_rates
 from services.get_current_dates import get_current_dates
 
 
