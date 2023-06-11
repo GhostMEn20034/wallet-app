@@ -25,12 +25,11 @@ router = fastapi.APIRouter(
 async def create_an_account(user_token: UserId = fastapi.Depends(get_current_user),
                             account: CreateAccountModel = fastapi.Body(...)):
     user = await db["users"].find_one({"_id": user_token.id})
-    if user:
-        account = account.dict(exclude_none=True)
-        account.update({"user": {"id": user.get("_id"), "first_name": user.get("first_name")},
-                        "created_at": datetime.datetime.utcnow(), "modified_at": datetime.datetime.utcnow()})
-        inserted_account = await db["accounts"].insert_one(convert_decimal(account))
-        return account
+    account = account.dict(exclude_none=True)
+    account.update({"user": {"id": user.get("_id"), "first_name": user.get("first_name")},
+                    "created_at": datetime.datetime.utcnow(), "modified_at": datetime.datetime.utcnow()})
+    inserted_account = await db["accounts"].insert_one(convert_decimal(account))
+    return account
 
 
 @router.get("/", response_description="Account list", response_model=List[Account], response_model_exclude_none=True)
@@ -78,3 +77,4 @@ async def update_bank_account(account_id: PyObjectId, user_token: UserId = fasta
 async def delete_account(account_id: PyObjectId, user_token: UserId = fastapi.Depends(get_current_user)):
     deleted_account = await db["accounts"].delete_one({"_id": account_id, "user.id": user_token.id})
     deleted_related_records = await db["records"].delete_many({"account_id": account_id})
+    delete_balance_trend = db["balanceTrend"].delete_many({"account_id": account_id})

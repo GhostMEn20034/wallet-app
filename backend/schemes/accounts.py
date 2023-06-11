@@ -36,7 +36,6 @@ class Account(BaseModel):
 class CreateAccountModel(BaseModel):
     name: str
     balance: condecimal(decimal_places=2) = 0
-    bank_account: Optional[str]
     currency: str
     color: str
 
@@ -44,7 +43,6 @@ class CreateAccountModel(BaseModel):
 class UpdateAccountModel(BaseModel):
     name: Optional[str]
     balance: Optional[condecimal(decimal_places=2)]
-    bank_account: Optional[str]
     color: Optional[str]
 
 
@@ -53,6 +51,10 @@ class BalanceTrend(BaseModel):
     initial: bool
     balance: float
     date: datetime.datetime
+
+    @validator('balance', pre=True, always=True)
+    def set_balance(cls, v):
+        return round(v, 2)
 
 
 class AggregatedAccount(BaseModel):
@@ -65,3 +67,7 @@ class AggregatedAccount(BaseModel):
     created_at: datetime.datetime
     current_period: List[BalanceTrend]
     percentage_change: float
+
+    @validator('balance', pre=True, always=True)
+    def set_balance(cls, v):
+        return round(v, 2)
