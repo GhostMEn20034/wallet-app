@@ -1,7 +1,7 @@
 from client import db
 from services.currency_utils import get_conversion_rates
 from services.get_current_dates import get_current_dates
-
+from utils import convert_decimal
 
 async def get_accounts(user_id, primary_currency, reverse: bool, sort_by="name"):
     conversion_rates = await get_conversion_rates(primary_currency) if sort_by == "balance" else {}
@@ -81,12 +81,6 @@ async def get_account(user_id, account_id):
                                                     dates['end_of_current_day']
                                                 ]
                                             },
-                                            # {
-                                            #     '$eq': [
-                                            #         '$$item.initial',
-                                            #         False
-                                            #     ]
-                                            # }
                                         ]
                                     }
                                 }
@@ -197,3 +191,9 @@ async def get_account(user_id, account_id):
 
     account = await db["accounts"].aggregate(pipeline).to_list(length=None)
     return account[0]
+
+
+async def update_account(user_id, account_id, account: dict):
+    updated_account = await db["accounts"].update_one({"user.id": user_id, "_id": account_id},
+                                                      {"$set": convert_decimal(account)})
+    return updated_account.modified_count

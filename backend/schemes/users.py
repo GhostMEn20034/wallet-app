@@ -33,6 +33,7 @@ class UserProfile(BaseModel):
     email: EmailStr
     date_of_birth: Optional[date]
     gender: GenderEnum = GenderEnum.unspecified
+    primary_currency: str
 
     class Config:
         allow_population_by_field_name = True
@@ -55,6 +56,7 @@ class UpdateUserProfile(BaseModel):
     last_name: Optional[str]
     date_of_birth: Optional[str]
     gender: Optional[GenderEnum]
+    primary_currency: Optional[str]
 
     class Config:
         use_enum_values = True
@@ -66,6 +68,7 @@ class UpdateUserProfile(BaseModel):
                "last_name": "Doe",
                "date_of_birth": "2004-05-14",
                "gender": "Female",
+               "primary_currency": "EUR"
            }
         }
 

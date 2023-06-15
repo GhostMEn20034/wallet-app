@@ -16,8 +16,9 @@ class TokenScheme(BaseModel):
     refresh_token: str
 
 
-class UserAuth(BaseModel):
+class SignUp(BaseModel):
     email: EmailStr
+    primary_currency: str
     password1: str
     password2: str
 

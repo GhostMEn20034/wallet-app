@@ -3,13 +3,13 @@ from dependencies import get_current_user
 from schemes.users import UserProfile, UpdateUserProfile
 from schemes.auth import (
     SignUpResponse,
-    UserAuth,
+    SignUp,
     UserId,
 )
 from client import db
 from utils import get_hashed_password
 from services import users as usr
-from services.delete_documents import delete_accounts_and_records
+from services.delete_related_info import delete_accounts_and_records
 
 
 router = fastapi.APIRouter(
@@ -20,7 +20,7 @@ router = fastapi.APIRouter(
 
 @router.post('/signup', summary="Create new user", response_model=SignUpResponse,
              status_code=fastapi.status.HTTP_201_CREATED)
-async def create_user(data: UserAuth):
+async def create_user(data: SignUp):
     # querying database to check if user already exist
     is_validated_credentials = await usr.validate_user(data.email, data.password1, data.password2)
 
@@ -28,6 +28,7 @@ async def create_user(data: UserAuth):
         user_data = {
             'email': data.email,
             'first_name': data.email,
+            'primary_currency': data.primary_currency
         }
 
         user = UserProfile(**user_data).dict()
@@ -49,22 +50,17 @@ async def update_profile(user_token: UserId = fastapi.Depends(get_current_user),
     user_profile = {k: v for k, v in user_profile.dict().items() if v is not None}
 
     user_id = user_token.id
-
     if len(user_profile) >= 1:
-        update_user_profile = await usr.update_user(user_id, user_profile)
-        if update_user_profile == 1:
-            if (
-                updated_user := await db["users"].find_one({"_id": user_id})
-            ) is not None:
-                return updated_user
+        await usr.update_user(user_id, user_profile)
 
-    if (existing_user := await db["users"].find_one({"_id": user_id})) is not None:
-        return existing_user
+    user = await db["users"].find_one({"_id": user_id})
+    return user
 
 
 @router.delete("/profile/delete", status_code=fastapi.status.HTTP_204_NO_CONTENT)
 async def delete_profile(user_token: UserId = fastapi.Depends(get_current_user)):
     accounts = await db["accounts"].find({"user.id": user_token.id}).to_list(100)
+    delete_user = await db["users"].delete_one({"_id": user_token.id})
     account_ids = [account["_id"] for account in accounts]
     if account_ids:
-        delete_related = await delete_accounts_and_records(account_ids)
+        await delete_accounts_and_records(account_ids)

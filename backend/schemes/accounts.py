@@ -39,11 +39,19 @@ class CreateAccountModel(BaseModel):
     currency: str
     color: str
 
+    @validator('balance', pre=True, always=True)
+    def set_balance(cls, v):
+        return round(v, 2)
+
 
 class UpdateAccountModel(BaseModel):
     name: Optional[str]
     balance: Optional[condecimal(decimal_places=2)]
     color: Optional[str]
+
+    @validator('balance', pre=True, always=True)
+    def set_balance(cls, v):
+        return round(v, 2)
 
 
 class BalanceTrend(BaseModel):

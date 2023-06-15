@@ -8,7 +8,7 @@ from schemes.accounts import Account, CreateAccountModel, UpdateAccountModel, Ag
 from dependencies import get_current_user
 from schemes.auth import UserId
 from schemes.users import PyObjectId
-from services.accounts import get_accounts, get_account
+from services.accounts import get_accounts, get_account, update_account
 from fastapi.responses import JSONResponse
 from utils import convert_decimal
 
@@ -57,18 +57,12 @@ async def update_bank_account(account_id: PyObjectId, user_token: UserId = fasta
 
     user_id = user_token.id
     if len(account) >= 1:
-        update_account = await db["accounts"].update_one({"user.id": user_id, "_id": account_id},
-                                                         {"$set": convert_decimal(account)})
+        await update_account(user_id, account_id, account)
 
-        if update_account.modified_count == 1 and (
-                updated_account := await db["accounts"].find_one({"user.id": user_id, "_id": account_id})
-        ) is not None:
-            return updated_account
+    updated_account = await db["accounts"].find_one({"_id": account_id})
 
-    if (
-            existing_account := await db["accounts"].find_one({"user.id": user_id, "_id": account_id})
-    ) is not None:
-        return existing_account
+    if updated_account:
+        return updated_account
 
     return JSONResponse(status_code=fastapi.status.HTTP_404_NOT_FOUND, content={"error": "account didn't found"})
 

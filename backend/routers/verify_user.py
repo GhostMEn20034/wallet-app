@@ -4,7 +4,7 @@ from pydantic import EmailStr
 from twilio.base.exceptions import TwilioRestException
 from utils import create_access_token, get_hashed_password
 from client import db
-from schemes.auth import UserAuth
+from schemes.auth import SignUp
 from schemes.verify_user import VerificationData, ResetPasswordData
 from services.users import validate_user
 from services.verify_user import (send_verification_code, check_verification_code,
@@ -16,7 +16,7 @@ router = fastapi.APIRouter(
 
 
 @router.post('/signup/validate-credentials')
-async def validate_credentials(data: UserAuth):
+async def validate_credentials(data: SignUp):
     is_validated_credentials = await validate_user(data.email, data.password1, data.password2)
 
     if is_validated_credentials:
