@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import users, auth, accounts, records, verify_user, categories, currencies
+from routers import users, auth, accounts, records, verify_user, categories, currencies, dashboard
 app = FastAPI()
 
 origins = [
@@ -22,6 +22,7 @@ app.include_router(records.router)
 app.include_router(verify_user.router)
 app.include_router(categories.router)
 app.include_router(currencies.router)
+app.include_router(dashboard.router)
 
 
 @app.get('/test')

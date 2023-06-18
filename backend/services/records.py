@@ -79,6 +79,11 @@ async def records_by_date(account_ids: List, primary_currency: str, filters: dic
     pipeline = [
         # Sort the records by date in descending order
         {"$sort": {"created_at": -1 if reverse else 1}},
+        {
+            "$match": {
+                "account_id": {"$in": account_ids}, **filters
+            }
+        },
         # Join the records collection with the accounts collection
         {"$lookup": {
             "from": "accounts",
@@ -88,11 +93,6 @@ async def records_by_date(account_ids: List, primary_currency: str, filters: dic
         }},
         # Unwind the account array
         {"$unwind": "$account"},
-        {
-            "$match": {
-                "account_id": {"$in": account_ids}, **filters
-            }
-        },
         # Project only the account_name field and rename the currency and color fields
         {"$project": {
             "_id": 1,
@@ -182,7 +182,6 @@ async def create_record(record_data: dict, account: dict, user_id):
         case "Income":
             increase_the_balance = await increment_the_balance(account.get("_id"), record_data.get("amount"))
             if increase_the_balance == 1:
-                del record_data["receiver"]
                 record_data["created_at"] = datetime.datetime.utcnow()
                 created_record = await db["records"].insert_one(record_data)
                 return fastapi.responses.JSONResponse(status_code=fastapi.status.HTTP_200_OK,
@@ -190,14 +189,13 @@ async def create_record(record_data: dict, account: dict, user_id):
         case "Expense":
             decrease_the_balance = await decrement_the_balance(account.get("_id"), record_data.get("amount"))
             if decrease_the_balance == 1:
-                del record_data["receiver"]
                 record_data["created_at"] = datetime.datetime.utcnow()
                 created_record = await db["records"].insert_one(record_data)
                 return fastapi.responses.JSONResponse(status_code=fastapi.status.HTTP_200_OK, content={
                     "status": "Funds have been successfully withdrawn from your account"})
         case "Transfer":
             receiver = await db["accounts"].find_one(
-                {"_id": record_data.get("receiver"), "user.id": user_id})
+                {"_id": record_data.get("receiver"), "user_id": user_id})
             if receiver:
                 return await funds_transfer(account, receiver, record_data)
 
@@ -212,16 +210,16 @@ async def records_by_amount(account_ids: List, primary_currency: str, filters: d
 
     pipeline = [
         {
+            "$match": {
+                "account_id": {"$in": account_ids}, **filters
+            }
+        },
+        {
             "$lookup": {
                 "from": "accounts",
                 "localField": "account_id",
                 "foreignField": "_id",
                 "as": "account"
-            }
-        },
-        {
-            "$match": {
-                "account_id": {"$in": account_ids}, **filters
             }
         },
         {

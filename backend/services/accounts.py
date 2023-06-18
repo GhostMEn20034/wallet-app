@@ -2,6 +2,33 @@ from client import db
 from services.currency_utils import get_conversion_rates
 from services.get_current_dates import get_current_dates
 from utils import convert_decimal
+import datetime
+import fastapi
+
+
+async def create_account(user, data):
+    agg_count = await db['accounts'].aggregate(
+        [
+            {
+                "$match": {
+                    "user_id": user.get("_id")
+                }
+            },
+            {"$count": "count"}
+        ]).to_list(length=None)
+
+    print()
+
+    if agg_count[0].get("count") >= 5:
+        raise fastapi.HTTPException(detail="You cannot create more than 5 accounts",
+                                    status_code=fastapi.status.HTTP_400_BAD_REQUEST)
+
+    account = data.dict(exclude_none=True)
+    account.update({"user_id": user.get("_id"),
+                    "created_at": datetime.datetime.utcnow(), "modified_at": datetime.datetime.utcnow()})
+    inserted_account = await db["accounts"].insert_one(convert_decimal(account))
+    return account
+
 
 async def get_accounts(user_id, primary_currency, reverse: bool, sort_by="name"):
     conversion_rates = await get_conversion_rates(primary_currency) if sort_by == "balance" else {}
@@ -9,14 +36,13 @@ async def get_accounts(user_id, primary_currency, reverse: bool, sort_by="name")
     pipeline = [
         {
             "$match": {
-                "user.id": user_id
+                "user_id": user_id
             }
         },
         {
             "$project": {
                 "name": 1,
                 "balance": {"$round": ["$balance", 2]},
-                "bank_account": 1,
                 "currency": 1,
                 "color": 1,
                 "created_at": 1,
@@ -45,7 +71,7 @@ async def get_account(user_id, account_id):
     pipeline = [
         {
             "$match": {
-                "user.id": user_id,
+                "user_id": user_id,
                 "_id": account_id
             }
         },
@@ -175,8 +201,8 @@ async def get_account(user_id, account_id):
                             {'$multiply': [
                                 {'$divide': [
                                     {'$subtract':
-                                        ['$$last_current.balance', '$$last_past.balance']}, '$$last_past.balance']
-                                 },
+                                         ['$$last_current.balance', '$$last_past.balance']}, '$$last_past.balance']
+                                },
                                 100]
                             }, 2]
                     }
@@ -184,8 +210,8 @@ async def get_account(user_id, account_id):
             },
         }},
         {'$project':
-            {'balanceTrend': 0,
-             'past_period': 0}
+             {'balanceTrend': 0,
+              'past_period': 0}
          }
     ]
 
@@ -194,6 +220,6 @@ async def get_account(user_id, account_id):
 
 
 async def update_account(user_id, account_id, account: dict):
-    updated_account = await db["accounts"].update_one({"user.id": user_id, "_id": account_id},
+    updated_account = await db["accounts"].update_one({"user_id": user_id, "_id": account_id},
                                                       {"$set": convert_decimal(account)})
     return updated_account.modified_count
