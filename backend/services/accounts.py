@@ -17,9 +17,9 @@ async def create_account(user, data):
             {"$count": "count"}
         ]).to_list(length=None)
 
-    print()
+    accounts_count = agg_count[0].get("count") if agg_count else 0
 
-    if agg_count[0].get("count") >= 5:
+    if accounts_count >= 5:
         raise fastapi.HTTPException(detail="You cannot create more than 5 accounts",
                                     status_code=fastapi.status.HTTP_400_BAD_REQUEST)
 

@@ -8,4 +8,4 @@ router = fastapi.APIRouter(
 
 @router.get("/")
 async def get_currencies():
-    return await db["currencies"].find().to_list(length=None)
+    return await db["currencies"].find().sort("code", 1).to_list(length=None)
