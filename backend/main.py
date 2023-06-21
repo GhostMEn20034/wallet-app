@@ -5,7 +5,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",
-    "ec2-16-16-69-175.eu-north-1.compute.amazonaws.com",
+    "http://ec2-16-16-69-175.eu-north-1.compute.amazonaws.com/",
 ]
 
 app.add_middleware(
