@@ -200,14 +200,28 @@ async def get_account(user_id, account_id):
                         "$round": [
                             {'$multiply': [
                                 {'$divide': [
-                                    {'$subtract':
-                                         ['$$last_current.balance', '$$last_past.balance']}, '$$last_past.balance']
-                                },
+
+                                    {"$cond": [
+                                        {"$eq": ["$current_period",
+                                                 []]},
+                                        0,
+                                        {'$subtract':
+                                             ['$$last_current.balance', '$$last_past.balance']}
+                                    ]},
+                                    {"$cond": [
+                                        {"$or": [
+                                            {"$eq": ["$past_period", []]},
+                                            {"$eq": ["$$last_past.balance", 0]}
+                                        ]},
+                                        1,
+                                        "$$last_past.balance"
+                                    ]}
+                                ]},
                                 100]
                             }, 2]
                     }
                 }
-            },
+            }
         }},
         {'$project':
              {'balanceTrend': 0,
