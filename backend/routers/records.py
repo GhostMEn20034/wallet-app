@@ -51,21 +51,19 @@ async def get_records(user_token: auth.UserId = fastapi.Depends(get_current_user
 
     filter_dict = create_filter_dict(other_filters)
 
-    account_ids_and_names = [{"id": account["_id"], "name": account["name"]} for account in accounts]
-
     reverse = bool(order == "desc")
 
     match sort_by:
         case "date":
             response = await records_by_date(account_ids, primary_currency, filter_dict, reverse)
             return {"response": response,
-                    "accounts": account_ids_and_names,
+                    "accounts": accounts,
                     "primary_currency": primary_currency,
                     "total": round(sum([record["total_amount"] for record in response]), 2)}
         case "amount":
             response = await records_by_amount(account_ids, primary_currency, filter_dict, reverse)
             return {"response": response[0].get("records") if response else [],
-                    "accounts": account_ids_and_names,
+                    "accounts": accounts,
                     "total": round(response[0].get("total"), 2) if response else None,
                     "primary_currency": primary_currency
                     }

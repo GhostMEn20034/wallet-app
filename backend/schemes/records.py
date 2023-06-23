@@ -1,6 +1,7 @@
 from typing import Optional, List, Dict, Union
 from pydantic import BaseModel, condecimal, validator, Field
 from .users import PyObjectId
+from .accounts import Account
 from enum import Enum
 import fastapi
 import datetime
@@ -85,13 +86,8 @@ class RecordFilter(BaseModel):
         }
 
 
-class Accounts(BaseModel):
-    id: PyObjectId
-    name: str
-
-
 class ResponseOfRecords(BaseModel):
     response: Union[List[AggregatedRecords], List[Record]]
-    accounts: List[Accounts]
+    accounts: List[Account]
     primary_currency: str
     total: float
