@@ -137,6 +137,7 @@ async def get_expense_structure(account_ids, filters, conversion_rates):
                     "total_expense": expense_structure[0].get("total_expense")} if expense_structure[0].get(
         "total_expense") else None
 
+    print(final_result.get("by_category"))
     return final_result
 
 
