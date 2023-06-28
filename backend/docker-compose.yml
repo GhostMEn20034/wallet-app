@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/app
-    command: uvicorn --workers 6 main:app --host 0.0.0.0 --reload
+    command: uvicorn --workers 4 main:app --host 0.0.0.0
     ports:
       - "8000:8000"
     restart: always
