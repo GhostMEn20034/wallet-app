@@ -79,9 +79,9 @@ exports = function(changeEvent) {
   }
 };
 ```
-### 3. Insert the data to `categories` collection from json file
+### 3. Insert the data to `categories` collection from [json file](categories.json)
 
-### 4. Insert the data to `currencies` collection from json file
+### 4. Insert the data to `currencies` collection from [json file](currencies.json)
 
 ### 5. Go to `backend` directory.
 ### 6. Create `.env` file:
