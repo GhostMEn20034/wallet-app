@@ -1,0 +1,321 @@
+[{
+  "_id": {
+    "$oid": "644fb3a6a2eb04e430735d5e"
+  },
+  "name": "Food and drinks",
+  "subcategories": [
+    {
+      "name": "Food and drinks"
+    },
+    {
+      "name": "Bars, cafes"
+    },
+    {
+      "name": "Products"
+    },
+    {
+      "name": "Restaurants, Fast food"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "644fb502a2eb04e430735d5f"
+  },
+  "name": "Shopping",
+  "subcategories": [
+    {
+      "name": "Shopping"
+    },
+    {
+      "name": "Pharmacy"
+    },
+    {
+      "name": "House, garden"
+    },
+    {
+      "name": "Free time"
+    },
+    {
+      "name": "Pets"
+    },
+    {
+      "name": "Electronics and accessories"
+    },
+    {
+      "name": "Stationery, tools"
+    },
+    {
+      "name": "Beauty and health"
+    },
+    {
+      "name": "Clothes and shoes"
+    },
+    {
+      "name": "Presents"
+    },
+    {
+      "name": "Jewelry"
+    },
+    {
+      "name": "Goods for children"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "644fb80ba2eb04e430735d60"
+  },
+  "name": "Dwelling",
+  "subcategories": [
+    {
+      "name": "Dwelling"
+    },
+    {
+      "name": "Mortgage"
+    },
+    {
+      "name": "Utilities"
+    },
+    {
+      "name": "Rent"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "644fb8fea2eb04e430735d61"
+  },
+  "name": "Communication, PC",
+  "subcategories": [
+    {
+      "name": "Communication, PC"
+    },
+    {
+      "name": "Internet"
+    },
+    {
+      "name": "Cellphone"
+    },
+    {
+      "name": "Sofware, games"
+    },
+    {
+      "name": "Postal services"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "644fba1da2eb04e430735d62"
+  },
+  "name": "Entertainment",
+  "subcategories": [
+    {
+      "name": "Alcohol"
+    },
+    {
+      "name": "Vacation"
+    },
+    {
+      "name": "Culture, sport"
+    },
+    {
+      "name": "Holidays"
+    },
+    {
+      "name": "Life events"
+    },
+    {
+      "name": "Books, audio, subscriptions"
+    },
+    {
+      "name": "Education, deveploment"
+    },
+    {
+      "name": "Lottery, gambling"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "649c59ae4ae354b3f43213c7"
+  },
+  "name": "Transportation",
+  "subcategories": [
+    {
+      "name": "Transportation"
+    },
+    {
+      "name": "Business trips"
+    },
+    {
+      "name": "Long distance"
+    },
+    {
+      "name": "Public transport"
+    },
+    {
+      "name": "Taxi"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "649c5a544ae354b3f43213c8"
+  },
+  "name": "Vehicle",
+  "subcategories": [
+    {
+      "name": "Vehicle"
+    },
+    {
+      "name": "Fuel"
+    },
+    {
+      "name": "Leasing"
+    },
+    {
+      "name": "Parking"
+    },
+    {
+      "name": "Rentals"
+    },
+    {
+      "name": "Vehicle insurance"
+    },
+    {
+      "name": "Vehicle maintenance"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "649c5b3f4ae354b3f43213c9"
+  },
+  "name": "Financial expenses",
+  "subcategories": [
+    {
+      "name": "Financial expenses"
+    },
+    {
+      "name": "Advisory"
+    },
+    {
+      "name": "Charges, Fees"
+    },
+    {
+      "name": "Child support"
+    },
+    {
+      "name": "Fines"
+    },
+    {
+      "name": "Insurances"
+    },
+    {
+      "name": "Loan, interests"
+    },
+    {
+      "name": "Taxes"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "649c5d454ae354b3f43213ca"
+  },
+  "name": "Investments",
+  "subcategories": [
+    {
+      "name": "Investments"
+    },
+    {
+      "name": "Collections"
+    },
+    {
+      "name": "Financial investments"
+    },
+    {
+      "name": "Realty"
+    },
+    {
+      "name": "Savings"
+    },
+    {
+      "name": "Vehicles, chattels"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "649c5e7a4ae354b3f43213cb"
+  },
+  "name": "Income",
+  "subcategories": [
+    {
+      "name": "Income"
+    },
+    {
+      "name": "Checks, coupons"
+    },
+    {
+      "name": "Child support"
+    },
+    {
+      "name": "Dues and grants"
+    },
+    {
+      "name": "Gifts"
+    },
+    {
+      "name": "Interests, devidents"
+    },
+    {
+      "name": "Lending, renting"
+    },
+    {
+      "name": "Lottery, gambling"
+    },
+    {
+      "name": "Refunds (tax, purchase)"
+    },
+    {
+      "name": "Rental income"
+    },
+    {
+      "name": "Sale"
+    },
+    {
+      "name": "Wage, invoices"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "649c5ea24ae354b3f43213cc"
+  },
+  "name": "Others",
+  "subcategories": [
+    {
+      "name": "Others"
+    },
+    {
+      "name": "Missing"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "649c5ed64ae354b3f43213cd"
+  },
+  "name": "Unknown",
+  "subcategories": [
+    {
+      "name": "Unknown income"
+    },
+    {
+      "name": "Unknown expense"
+    }
+  ]
+}]
